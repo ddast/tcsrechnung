@@ -1,0 +1,287 @@
+*******************************************************************************
+*   1.  KURZBESCHREIBUNG                                                      *
+*******************************************************************************
+  
+Das Projekt 'tcsrechnung' besteht aus zwei Teilen:
+
+- tcsrechnung.cls:
+    Eine LaTeX Klasse für die Rechnungen
+- tcsrechnung.py:
+    Ein python Skript, das die Daten aus einer .xml-Datei liest und daraus
+    eine .tex Datei erstellt.
+
+Es müssen folgende Programm installiert sein:
+- python ab Version 3
+- Eine LaTeX Distribution mit pdflatex und der Komaklasse scrlttr2, wie z.B.
+  TeX Live.
+
+Empfehlenswert ist weiterhin:
+- Das Build-Management-Tool make, zur Vereinfachung der Build Prozesses.
+- Ein einfacher Texteditor zur Bearbeitung der .xml-Datei, wie z.B. Geany.
+  Dieser lässt sich so einrichten, dass nicht auf die Kommandozeile gewechselt
+  werden muss.
+
+
+*******************************************************************************
+*   2.  BENUTZUNG                                                             *
+*******************************************************************************
+
+Sämtliche Daten für den Rechnungszeitraum müssen in eine xml-Datei geschrieben
+werden. Die erforderlichen Felder in der xml-Datei werden im nächsten Abschnitt
+beschrieben.
+Liegen die Dateien in rechnungen.xml vor, lässt sich über folgende Befehle eine
+.pdf Datei erstellen, die sämtliche Rechnungen enthält:
+
+  python tcsrechnung.py rechnungen.xml > rechnungen.tex
+  pdflatex rechnungen.tex
+
+In der ersten Zeile wird dem python Interpreter das Skript 'tcsrechnung.py'
+übergeben, welches wiederum als Eingabe die Datei 'rechnungen.xml' enthält. Da
+das Skript die Daten auf der Konsole (cout) ausgibt, werden diese über '>' in
+die Datei 'rechnungen.tex' umgeleitet. Diese wiederum wird an pdflatex
+übergeben, welche daraus die Datei 'rechnungen.pdf' erstellt.
+
+Dieser Prozess wird über das mitgelieferte Makefile automatisiert, welches
+außerdem noch temporär erstellte Daten aufräumt. Das Makefile wird auf folgende
+Art verwendet, wenn die Daten in der Datei 'rechnungen_2013_01.xml' vorliegen:
+
+  make rechnungen_2013_01.pdf
+
+
+*******************************************************************************
+*   3.  DIE XML-DATEI                                                         *
+*******************************************************************************
+
+-------------------------------------------------------------------------------
+-   3.1 Der xml Standard                                                      -
+-------------------------------------------------------------------------------
+
+Sämtliche zur Rechnungserstellung erforderlichen Daten werden in die xml-Datei
+eingetragen. Eine Beispieldatei befindet sich im Programmverzeichnis. Im
+Normalfall ist die xml-Datei die einzige Datei, die verändert werden muss.
+
+Im xml-Format werden Felder definiert, die einen bestimmten Wert enthalten:
+
+  <feld>beispielwert</feld>
+
+Alles was zwischen <feld> und </feld> steht, ist der Wert des Feldes. Im obigen
+Beispiel hat also das Feld mit dem Namen 'feld' den Wert 'beispielwert'.
+Felder können verschachtelt werden:
+
+  <aussen>
+    <innen1>wert1</innen1>
+    <innen2>wert2</innen2>
+  </aussen>
+
+Das Feld mit dem Namen 'aussen' enthält zwei neue Felder mit den namen 'innen1'
+und 'innen2', die die Werte 'wert1' und 'wert2' enthalten. Es wurden außerdem
+Zeilenumbrüche und Einrückungen verwendet, um die Struktur zu verdeutlichen.
+Dies ist zwar nicht nötig, um eine korrekte xml-Datei zu schreiben, ist jedoch
+aus Gründen der Übersichtlichkeit sehr zu empfehlen.
+
+Dies sind auch schon sämtliche Funktionen des xml-Standards, die benötigt
+werden.
+
+
+-------------------------------------------------------------------------------
+-   3.2 Die xml-Datei für tcsrechnung                                         -
+-------------------------------------------------------------------------------
+
+Die grundsätzliche Struktur sieht folgendermaßen aus:
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <data>
+    <von>Januar</von>
+    <bis>April</bis>
+    <jahr>2013</jahr>
+    <stdkosten60>
+      <p1>40</p1>
+      <p2>42</p2>
+      <p3>42</p3>
+      <p4>44</p4>
+      <p5>45</p5>
+    </stdkosten60>
+    <stdkosten40>
+      <p1>30</p1>
+      <p2>32</p2>
+      <p3>33</p3>
+      <p4>36</p4>
+    </stdkosten40>
+    <beginn_halle>01-10-2012</beginn_halle>
+    <hallenkosten>11</hallenkosten>
+    <rechnungsnummer>0</rechnungsnummer>
+
+    <rechnung>
+      [...]
+    </rechnung>
+    <rechnung>
+      [...]
+    </rechnung>
+  </data>
+
+Die erste Zeile muss nie geändert werden, sie sagt aus, dass der Inhalt im
+Encoding UTF-8 zu interpretieren ist.
+In der nächsten Zeile geht ein 'data' Feld auf, das erst ganz am Ende der Datei
+wieder geschlossen wird.
+Direkt nachdem der 'data'-Block geöffnet wird, werden einige globale
+Informationen angegeben, die für sämtliche Rechnungen in einem
+Rechnungszeitraum gelten. Die Reihenfolge der Einträge ist beliebig. Die Felder
+müssen mit den folgenden Informationen versehen werden:
+  <von>: der erste Monat des Rechnungszeitraums
+  <bis>: der letzte Monat des Rechnungszeitraums
+  <jahr>: das Jahr des Rechnungszeitraums
+  <stdkosten60>: enthält die fünf Felder <p1> bis <p5>, diese enthalten den
+    Bruttopreis für eine 60-minütige Trainingseinheit für 1 bis 5 Personen
+  <stdkosten40>: identisch mit <stdkosten60> nur für 40-minütige
+    Trainingseinheiten
+  <beginn_halle>: der erste Tag der (relevanten) Hallensaison. Dieses Feld muss
+    auch für die Sommersaison definiert sein, es wird dann automatisch
+    berechnet, dass keine Hallensaison ist. Format: TT-MM-JJJJ
+  <hallenkosten>: die Bruttohallenkosten für 60 Minuten
+  <rechnungsnummer>: die Rechnungsnummer der letzten gestellten Rechnung im
+    aktuellen Jahr
+
+Anschließend werden so viele Felder 'rechnung' erstellt wie es Rechnungen geben
+soll. Ein Rechnungsblock sieht so aus:
+
+  <rechnung>
+    <name>Familie Mustermann</name>
+    <strasse>Mustertraße 1</strasse>
+    <ort>70771 Leinfelden-Echterdingen</ort>
+    <kind>
+      <name>Tick</name>
+      <training>
+        <tag>Dienstag</tag>
+        <preis>144</preis>
+        <preis>108</preis>
+        <preis>108</preis>
+        <preis>144</preis>
+        <teilnehmerzahl>4</teilnehmerzahl>
+        <dauer>40</dauer>
+        <foerderung>nein</foerderung>
+        <bezahlt>nein</bezahlt>
+      </training>
+      <training>
+        [...]
+      </training>
+    </kind>
+    <kind>
+      [...]
+    </kind>
+</rechnung>
+
+Dieser enthält die Felder:
+  <name>: Name des Rechnungsempfängers
+  <strasse>: Straße des Rechnungsempfängers
+  <ort>: Postleitzahl und Ort des Rechnungsempfängers
+und einen Block <kind>, der ein Trainingskind repräsentiert mit den Feldern:
+  <name>: Name des trainierenden Kindes
+und einen Block <training>. Dieser repräsentiert einen Trainingstag und enthält
+die Felder:
+  <tag>: Trainingstag
+  <preis>: Bruttopreis für die Trainingsstunden. Das Feld Preis darf beliebig
+    oft definiert werden, der Gesamtbruttopreis ist dann die Summe der
+    angegebenen Preise. So kann direkt der Bruttopreis für die einzelnen Monate
+    angegeben werden.
+  <teilnehmerzahl>: Zahl der Personen in der Trainingsstunde
+  <dauer>: Dauer der Trainingsstunde in Minuten (40 oder 60), ohne Einheit
+  <foerderung>: Wird dieses Training gefördert? Mögliche Werte 'ja', 'nein'
+  <bezahlt>: Wurde die Trainingsstunde bereits bezahlt? Mögliche Werte 'ja',
+    'nein'
+  <hallenstunden>: Dieses Feld muss nicht gesetzt werden. Falls es verwendet
+    wird, wird die angegebene Zahl von Hallenstunden berechnet, anstatt die
+    Zahl der Stunden im gesamten Rechnungszeitraum. Dies kann nötig sein, falls
+    sich die Trainingszeiten während des Rechnungszeitraums ändern.
+
+Innerhalb eines Kind-Blocks müssen sämtliche Trainingsblöcke dieses Kindes
+eingetragen werden. Gehört ein weiteres Trainingskind auf diese Rechnung wird
+ein zusätzlicher Kind-Block erstellt innerhalb dieses Rechnungsblocks.
+
+Damit ist ein Rechnungsblock abgeschlossen. Ein weiterer Rechnungsblock wird
+darunter angehängt.
+
+
+*******************************************************************************
+*   4.  DAS PYTHON SKRIPT tcsrechnung.py                                      *
+*******************************************************************************
+
+Das python Skript benötigt python ab Version 3. Es nimmt als einziges Argument
+die xml-Datei und berechnet daraus sämtliche Werte für die Rechnung. Es
+überprüft Werte auf Konsistenz, d.h. die angegeben Preise müssen sich über
+einen ganzzahligen Faktor aus den Preisen für die Trainingseinheiten berechnen
+lassen. Es gibt den vollständigen Inhalt der tex-Date aus, aus der im nächsten
+Schritt die Rechnungen als pdf-Datei erstellt werden. Die Ausgabe erfolgt auf
+der Konsole (cout) und wird im Normalfall in eine tex-Datei umgeleitet.
+
+Das Skript selbst muss, solange sich am Rechnungsprozess an sich nichts ändert,
+eigentlich nie geändert werden. Falls doch ist das Skript ausreichend
+dokumentiert und mit grundlegenden Programmierkenntnissen verständlich.
+
+
+*******************************************************************************
+*   5.  DIE LATEX-KLASSE tcsrechnung.cls                                      *
+*******************************************************************************
+
+Die LaTeX-Klasse schreibt das Aussehen der Rechnung selbst vor. Die Klasse
+definiert eine Reihe von Befehlen, die die Rechnungserstellung sehr einfach
+macht. Die Klasse wird von der .tex-Datei verwendet, welche für gewöhnlich
+durch das Skript tcsrechnung.py erstellt, es kann in komplizierteren Fällen,
+die durch das Skript nicht abgedeckt werden, jedoch nötig sein, die .tex Datei
+von Hand zu bearbeiten.
+
+Der Inhalt der .tex Datei sieht typischerweise so aus:
+
+  \documentclass{tcsrechnung}
+  
+  \begin{document}
+  
+  \Empfaenger{Herr Mustermann}{Musterstr. 1}{70771 Leinfelden-Echterdingen}
+  \Referenz{13/0001}{Januar}{April 2013}{Tick, Trick}
+  \Kostentyp{Trainingskosten (Tick)}
+  \Posten{Montag}{14}{36,97}{4}{60}{129,41}{0,00}{129,41}
+  \Posten{Mittwoch}{13}{35,29}{3}{60}{152,94}{152,94}{0,00}
+  \Kostentyp{Hallenkosten (Trick)}
+  \Posten{Montag}{16}{10,28}{4}{60}{41,12}{0,00}{41,12}
+  \Posten{Mittwoch}{17}{10,28}{3}{60}{58,26}{0,00}{58,26}
+  \SummeWinter{257,92}{24,59}{8,99}{291,50}
+  \Schluss{Januar}{April 2013}{2014}
+
+  \Empfaenger{...
+  [...]
+  
+  \end{document}
+
+
+Wobei die Felder die folgenden Bedeutungen haben:
+
+\Empfaenger{Name}{Straße}{Ort}
+Definiert Empfänger der Rechnung
+
+\Referenz{Rechnungsnr}{erster Monat}{letzter Monat}{Namen der Kinder}
+Erzeugt Referenzzeile, Betreff und Tabelle bis zum ersten Rechnungsposten
+
+\Kostentyp{Diese und jene Kosten}
+Schreibt den Kostentyp in die Tabelle
+
+\Posten{Tag}{Einheiten}{Preis/Std}{Gruppe}{Dauer}{Preis}{Förderung}{Gesamt}
+Erzeugt einen Rechnungsposten (eine Zeile) in der Tabelle
+Die Einheiten (Eurozeichen, min) dürfen nicht angegeben werden
+
+\SummeWinter{Summe netto}{MwSt 19%}{MwSt 7%}{Summe brutto}
+\SummeSommer{Summe netto}{MwSt 19%}{Summe brutto}
+Schreibt die Rechnungssummen in die Tabelle
+Im Winter mit 7% MwSt, im Sommer ohne
+
+\Schluss{erster Monat}{letzter Monat}{kommende Saison}
+Schreibt den Text unterhalb der Tabelle
+
+Damit ist eine Rechnung fertig, ein weiterer Block wird darunter eingefügt.
+
+In der Klasse tcsrechnung.cls sind außerdem ein paar wenige Daten fest
+eingetragen, die eventuell geändert werden müssen, dazu gehört:
+ - Name und Absendeadresse des Rechnungstellers
+ - Telefonnummer und Email-Adresse des Rechnungstellers
+ - Kontodaten und steuerliche Informationen des TC Stetten
+Diese Informationen sind leicht in der Datei tcsrechnung.cls zu finden und
+können bearbeitet werden.
+
