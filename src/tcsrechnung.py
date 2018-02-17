@@ -40,7 +40,8 @@ class Metadaten():
     """Für gesamte Rechungsstellung gültige Metadaten.
 
     Attribute:
-        jahr: Jahr der Rechnungsstellung
+        jahr: Jahr der Rechnung
+        jahr_cur: Jahr in dem Rechnung verschickt wird
         von_monat: Erster Monat
         bis_monat: Letzer Monat
         stdlohn60: Bruttostundenlohn für 60 Minuten
@@ -61,6 +62,7 @@ class Metadaten():
         @root: Wurzel xml-tree aller Rechnungen
         """
         self.jahr = int(root.find('jahr').text)
+        self.jahr_cur = datetime.date.today().year
         self.von_monat = root.find('von').text
         self.bis_monat = root.find('bis').text
         self.stdlohn60 = [int(root.find('stdkosten60').find(p).text)
@@ -219,8 +221,7 @@ def erstelle_rechnung(rechnung, rechnungsnummer, meta):
           kinder += ', '
       kinder += kind.find('name').text
 
-    jahr_current = datetime.date.today().year
-    latex_out += ('\\Referenz{' + str(jahr_current-2000)
+    latex_out += ('\\Referenz{' + str(meta.jahr_cur-2000)
                   + '/{:04d}'.format(rechnungsnummer)
                   + '}{' + meta.von_monat
                   + '}{' + meta.bis_monat + ' ' + str(meta.jahr)
@@ -289,7 +290,7 @@ def erstelle_rechnung(rechnung, rechnungsnummer, meta):
     return latex_out
 
 
-def erstelle_mail(rechnung, rechnungsnummer, meta, texfile):
+def erstelle_mail(rechnung, rechnungsnummer, meta, texfile, folder):
     """Erstellt Mailausgabe
 
        @rechnung: xml-tree eines Rechnungelements
@@ -304,8 +305,10 @@ def erstelle_mail(rechnung, rechnungsnummer, meta, texfile):
     anrede = name.split(' ', 1)[0]
     if anrede == 'Familie' or anrede == 'Frau':
         anrede_out = 'Liebe ' + name
-    elif anrede == 'Herr':
-        anrede_out = 'Lieber ' + name
+    elif anrede == 'Herrn':
+        anrede_out = 'Lieber Herr ' + name.split(' ', 1)[1]
+    else:
+        anrede_out = 'Liebe/r ' + name
 
     kinder = rechnung.findall('kind')
     kinder_out = kinder[0].find('name').text
@@ -314,7 +317,9 @@ def erstelle_mail(rechnung, rechnungsnummer, meta, texfile):
     if len(kinder) > 1:
         kinder_out += ' und ' + kinder[-1].find('name').text
 
-    texfile = texfile.replace('tex', 'pdf')
+    texfile = os.path.join(os.getcwd(), folder,
+                           os.path.splitext(os.path.basename(texfile))[0]
+                           + '.pdf')
 
     return (anrede_out + ';'
             + email_out + ';'
@@ -323,6 +328,11 @@ def erstelle_mail(rechnung, rechnungsnummer, meta, texfile):
             + meta.bis_monat + ';'
             + str(meta.jahr) + ';'
             + texfile + '\n')
+
+
+def get_mail_header():
+    """Gibt den Header der csv Datei für die Mails zurück"""
+    return "Anrede;Email;Kinder;Von_Monat;Bis_Monat;Jahr;Anhang\n"
 
 
 def run():
@@ -337,28 +347,36 @@ def run():
                         help='Ausgabeordner Rechnungen (tex Format)')
     parser.add_argument('-m', required=True,
                         help='Ausgabedatei Emails (csv Format)')
+    parser.add_argument('-p', required=True,
+                        help='Ausgabeordner Rechnunge (pdf Format)')
     args = parser.parse_args()
 
     tree = ET.parse(args.i)
     root = tree.getroot()
     if not os.path.exists(args.o):
         os.makedirs(args.o)
-    if args.o[-1] != '/':
-        args.o = args.o + '/'
     meta = Metadaten(root)
 
-    with open(args.m, 'w') as f_mail:
+    with open(args.m, 'w') as f_mail,\
+            open(os.path.join(args.o, 'all.tex'), 'w') as f_tex_all:
+        f_mail.write(get_mail_header())
+        f_tex_all.write('\\documentclass{tcsrechnung}\n')
+        f_tex_all.write('\\begin{document}\n')
         rechnungsnr = int(root.find('rechnungsnummer').text)
         for rechnung in root.findall('rechnung'):
             rechnungsnr += 1
-            texfile = (args.o + str(meta.jahr) + '_' + str(rechnungsnr)
-                       + '.tex')
+            texfile = os.path.join(args.o, str(meta.jahr_cur-2000)
+                                   + '_{:04d}'.format(rechnungsnr) + '.tex')
+            output = erstelle_rechnung(rechnung, rechnungsnr, meta)
+            f_tex_all.write(output)
             with open(texfile, 'w') as f_tex:
                 f_tex.write('\\documentclass{tcsrechnung}\n')
                 f_tex.write('\\begin{document}\n')
-                f_tex.write(erstelle_rechnung(rechnung, rechnungsnr, meta))
+                f_tex.write(output)
                 f_tex.write('\\end{document}\n')
-            f_mail.write(erstelle_mail(rechnung, rechnungsnr, meta, texfile))
+            f_mail.write(erstelle_mail(rechnung, rechnungsnr, meta,
+                                       texfile, args.p))
+        f_tex_all.write('\\end{document}\n')
 
 
 if __name__ == '__main__':
