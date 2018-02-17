@@ -43,6 +43,8 @@
 
 % Silbentrennung nach neuer deutscher Rechtschreibung
 \usepackage[ngerman]{babel}
+% Füge Worttrennung für unbekannte Worte hinzu
+\hyphenation{Bank-ver-bin-dung-en}
 
 % lmodern Schrifttyp
 \usepackage{lmodern}
@@ -66,6 +68,18 @@
 \setlength{\parindent}{0pt}
 % Dafür größerer Abstand zwischen den Absätzen
 \setlength{\parskip}{5pt}
+
+% Definiere Umgebung, die keine Seitenumbrüche erlaubt
+\newlength{\currentparindent}
+\newlength{\currentparskip}
+\newenvironment{samepage2}
+  {\setlength{\currentparskip}{\parskip}
+   \setlength{\currentparindent}{\parindent}
+   \begin{minipage}{\textwidth}
+   \setlength{\parskip}{\currentparskip}
+   \setlength{\parindent}{\currentparindent}
+  }
+  {\end{minipage}}
 
 % Nutze scrpage2 Fuß- und Kopfzeilen
 \pagestyle{scrheadings}
@@ -230,21 +244,17 @@
 % Schreibt den Text unterhalb der Tabelle
 % \Schluss{erster Monat}{letzter Monat}{kommende Saison}
 \newcommand{\Schluss}[3]{
-    \begin{samepage}
+    \begin{samepage2}
       Fördergelder des Vereins TC Stetten im Jugend- und Aktivenbereich, welche
       in der Zeit von #1 bis #2 geleistet wurden, sind vollständig zurück zu
       erstatten, falls der/die Spieler/in den Verein zur Saison #3 verlassen
       sollte.
-      \nopagebreak
       
       \textbf{Mit der Bezahlung der Rechnung werden diese Bedingungen
       anerkannt.}
-      \nopagebreak
 
       Bitte überweisen Sie den Rechnungsbetrag auf eine unserer unten
-      angeführten Bank\-ver\-bin\-dung\-en. Vielen Dank!
-    \end{samepage}
-
-    %\closing{Freundliche Grüße}
+      angeführten Bankverbindungen. Vielen Dank!
+    \end{samepage2}
   \end{letter}
 }
