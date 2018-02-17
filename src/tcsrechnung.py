@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 ##########################################################################
 # tcsrechnung.py - Rechnungsauswertung des TC Stetten                    #
 #                                                                        #
@@ -14,348 +16,350 @@
 # You should have received a copy of the GNU General Public License      #
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.  #
 ##########################################################################
+
 import sys
+import os
 import xml.etree.ElementTree as ET
 import datetime
 import calendar
+import argparse
 
 
-# Wörterbücher
-wochentage_dic = {'Montag': 0, 'Dienstag': 1, 'Mittwoch': 2,\
-    'Donnerstag': 3, 'Freitag': 4, 'Samstag': 5, 'Sonntag': 6}
-monate_dic = {'Januar': 1, 'Februar': 2, 'März': 3, 'April': 4, 'Mai': 5,\
-    'Juni': 6, 'Juli': 7, 'August': 8, 'September': 9, 'Oktober': 10,\
-    'November': 11, 'Dezember': 12}
-
-# Globale Variablen für gesamte Rechnungsstellung gültig
-# Jahr der Rechnungsstellung
-jahr=0
-# Erster Monat
-von_monat=""
-# Letzer Monat
-bis_monat=""
-# Brutto Stundenlohn für 60 und 40 Minuten
-stdlohn60 = []
-stdlohn40 = []
-# Netto Stundenlohn für 60 und 40 Minuten
-stdlohn60n = []
-stdlohn40n = []
-# Ist im Zeitraum Hallensaison?
-hallensaison=0
-# Brutto Hallenkosten für eine Stunde
-stdhalle=0
-# Netto Hallenkosten für eine Stunde
-stdhalle_netto=0
-# Wochentage in der Schnittmenge Hallensaison und Rechnungszeitraum
-wochentage_cnt = [0]*7
+wochentage_dic = {
+    'Montag': 0, 'Dienstag': 1, 'Mittwoch': 2,
+    'Donnerstag': 3, 'Freitag': 4, 'Samstag': 5, 'Sonntag': 6
+    }
+monate_dic = {
+    'Januar': 1, 'Februar': 2, 'März': 3, 'April': 4, 'Mai': 5,
+    'Juni': 6, 'Juli': 7, 'August': 8, 'September': 9, 'Oktober': 10,
+    'November': 11, 'Dezember': 12
+    }
 
 
-def erstelle_posten(training, nettopreise, bruttopreise):
-  """Erzeugt Posten aus einem Trainingsblock.
+class Metadaten():
+    """Für gesamte Rechungsstellung gültige Metadaten.
 
-     @training: xml-tree eines Trainingselements
-     @nettopreise: Rückgabeliste für Nettopreise (Cent Genauigkeit)
-     @bruttopreise: Rückgabeliste für Bruttopreise (Cent Genauigkeit)
-  """
-
-  # Trainingsdauer
-  dauer = int(training.find('dauer').text)
-
-  # Teilnehmerzahl
-  teilnehmerzahl = int(training.find('teilnehmerzahl').text)
-
-  # Berechne Gesamtpreis
-  gesamtpreis = 0
-  for preis in training.findall('preis'):
-    gesamtpreis += int(preis.text)
-  gesamtpreis_netto = gesamtpreis/(teilnehmerzahl*1.19)
-
-  # Stundenlohn
-  if dauer == 60:
-    stdlohn = stdlohn60[teilnehmerzahl-1]
-    stdlohn_netto = stdlohn60n[teilnehmerzahl-1]
-  elif dauer == 40:
-    stdlohn = stdlohn40[teilnehmerzahl-1]
-    stdlohn_netto = stdlohn40n[teilnehmerzahl-1]
-  else:
-    print('Keine gültige Trainingsdauer angegeben', file=sys.stderr)
-    return 0
-
-  # Zahl der Trainingseinheiten
-  if gesamtpreis%stdlohn == 0:
-    einheiten = int(gesamtpreis/stdlohn)
-  else:
-    print('Gesamtpreis ist kein Vielfaches des Stundenlohns', file=sys.stderr)
-
-  # Förderung und Zahlbetrag
-  if training.find('foerderung').text == 'ja':
-    foerderung = gesamtpreis_netto
-    zahlbetrag = 0.
-    zahlbetrag_brutto = 0.
-  else:
-    foerderung = 0.
-    zahlbetrag = gesamtpreis_netto
-    zahlbetrag_brutto = gesamtpreis/teilnehmerzahl
-
-  # Speicher Preise in Liste für spätere Auswertung
-  nettopreise.append(round(zahlbetrag,2))
-  bruttopreise.append(round(zahlbetrag_brutto,2))
-
-  # Erstelle Latex Kommando für einen Posten und gib dieses zurück
-  posten = '\Posten{' +\
-    training.find('tag').text + '}{' +\
-    str(einheiten) + '}{' +\
-    '{:.2f}'.format(stdlohn_netto*60/dauer).replace('.',',') + '}{' +\
-    str(teilnehmerzahl) + '}{' +\
-    str(dauer) + '}{' +\
-    '{:.2f}'.format(gesamtpreis_netto).replace('.',',') + '}{' +\
-    '{:.2f}'.format(foerderung).replace('.',',') + '}{' +\
-    '{:.2f}'.format(zahlbetrag).replace('.',',') + '}'
-  return posten
+    Attribute:
+        jahr: Jahr der Rechnungsstellung
+        von_monat: Erster Monat
+        bis_monat: Letzer Monat
+        stdlohn60: Bruttostundenlohn für 60 Minuten
+        stdlohn40: Bruttostundenlohn für 40 Minuten
+        stdlohn60n: Nettostundenlohn für 60 Minuten
+        stdlohn40n: Nettostundenlohn für 40 Minuten
+        hallensaison: Ist im Zeitraum Hallensaison?
+        stdhalle: Bruttohallenkosten für eine Stunde
+        stdhalle_netto: Nettohallenkosten für eine Stunde
+        wochentage_cnt: Wochentage in der Schnittmenge Hallensaison und
+                        Rechnungszeitraum
+     """
 
 
-def erstelle_hallenposten(training, nettopreise, bruttopreise):
-  """Erzeugt Hallenposten aus einem Trainingsblock.
+    def __init__(self, root):
+        """Initialisiere verwendete Variablen.
 
-     @training: xml-tree eines Trainingselements
-     @nettopreise: Rückgabeliste für Nettopreise (Cent Genauigkeit)
-     @bruttopreise: Rückgabeliste für Bruttopreise (Cent Genauigkeit)
-  """
-  # Wochentag
-  wochentag = training.find('tag').text
+        @root: Wurzel xml-tree aller Rechnungen
+        """
+        self.jahr = int(root.find('jahr').text)
+        self.von_monat = root.find('von').text
+        self.bis_monat = root.find('bis').text
+        self.stdlohn60 = [int(root.find('stdkosten60').find(p).text)
+                          for p in ['p1', 'p2', 'p3', 'p4', 'p5']]
+        self.stdlohn40 = [int(root.find('stdkosten40').find(p).text)
+                          for p in ['p1', 'p2', 'p3', 'p4']]
+        self.stdlohn60n = [i / 1.19 for i in self.stdlohn60]
+        self.stdlohn40n = [i / 1.19 for i in self.stdlohn40]
+        self.stdhalle = int(root.find('hallenkosten').text)
+        self.stdhalle_netto = self.stdhalle/1.07
 
-  # Zahl der Halleneinheiten
-  # Falls explizit angegeben wird dieser Wert übernommen, ansonsten der gesamte
-  # Zeitraum angenommen.
-  einheiten = 0
-  halleneinheiten = training.find('halleneinheiten')
-  if halleneinheiten is None:
-    einheiten = wochentage_cnt[wochentage_dic[wochentag]]
-  else:
-    einheiten = int(halleneinheiten.text)
+        self.hallensaison = False
+        self.wochentage_cnt = [0]*7
+        self._init_hallensaison(root)
 
-  # Teilnehmerzahl
-  teilnehmerzahl = int(training.find('teilnehmerzahl').text)
 
-  # Trainingsdauer
-  dauer = int(training.find('dauer').text)
+    def _init_hallensaison(self, root):
+        """Initialisiert self.hallensaison und self.wochentage_cnt."""
+        von_datum = datetime.date(self.jahr, monate_dic[self.von_monat], 1)
+        bis_datum = datetime.date(self.jahr, monate_dic[self.bis_monat],
+            calendar.monthrange(self.jahr, monate_dic[self.bis_monat])[1])
+        beginn_halle_str = root.find('beginn_halle').text
+        beginn_halle = datetime.datetime.strptime(beginn_halle_str,
+            '%d-%m-%Y').date()
+        ende_halle = beginn_halle + datetime.timedelta(30*7-1)
+        if ((bis_datum > beginn_halle and bis_datum < ende_halle) or
+            (von_datum > beginn_halle and von_datum < ende_halle)):
+            print('Im Rechnungszeitraum ist Hallensaison.')
+            self.hallensaison = True
+        else:
+            print('Im Rechnungszeitraum ist keine Hallensaison.')
+            self.hallensaison = False
 
-  # Gesamtpreis netto
-  gesamtpreis_netto = einheiten*stdhalle_netto*dauer/(60*teilnehmerzahl)
+        for i in range(7):
+            cur_datum = von_datum + datetime.timedelta(i)
+            cnt = 0
+            woche_delta = datetime.timedelta(7)
+            while cur_datum <= ende_halle and cur_datum <= bis_datum:
+                cnt += 1
+                cur_datum += woche_delta
+            self.wochentage_cnt[cur_datum.weekday()] = cnt
 
-  # Speicher Preise in Liste für spätere Auswertung
-  nettopreise.append(round(gesamtpreis_netto,2))
-  bruttopreise.append(round(einheiten*stdhalle*dauer/(60*teilnehmerzahl),2))
 
-  # Erstelle Latex Kommando für einen Posten und gib dieses zurück
-  posten = '\Posten{' +\
-    wochentag + '}{' +\
-    str(einheiten) + '}{' +\
-    '{:.2f}'.format(stdhalle_netto).replace('.',',') + '}{' +\
-    str(teilnehmerzahl) + '}{' +\
-    str(dauer) + '}{' +\
-    '{:.2f}'.format(gesamtpreis_netto).replace('.',',') + '}{' +\
-    '{:.2f}'.format(0).replace('.',',') + '}{' +\
-    '{:.2f}'.format(gesamtpreis_netto).replace('.',',') + '}'
-  return posten
+def erstelle_posten(training, meta, nettopreise, bruttopreise):
+    """Erzeugt Posten aus einem Trainingsblock.
 
-def erstelle_rechnung(rechnung, rechnungsnummer):
-  """Erstellt eine Rechnung.
+       @training: xml-tree eines Trainingselements
+       @meta: Metadaten gültig für alle Rechnungen
+       @nettopreise: Rückgabeliste für Nettopreise (Cent Genauigkeit)
+       @bruttopreise: Rückgabeliste für Bruttopreise (Cent Genauigkeit)
+    """
+    dauer = int(training.find('dauer').text)
+    teilnehmerzahl = int(training.find('teilnehmerzahl').text)
 
-     @rechnung: xml-tree eines Rechnungelements
-     @rechnungsnummer: fortlaufende Rechnungsnummer
-     Die Funktion erzeugt sämtliche Latex Kommandos zu einer Rechnung.
-  """
+    gesamtpreis = 0
+    for preis in training.findall('preis'):
+        gesamtpreis += int(preis.text)
+    gesamtpreis_netto = gesamtpreis/(teilnehmerzahl*1.19)
 
-  # Empfängerzeile
-  print('\Empfaenger{', rechnung.find('name').text, '}{',
-      rechnung.find('strasse').text, '}{',
-      rechnung.find('ort').text, '}',
-      sep='')
+    if dauer == 60:
+        stdlohn = meta.stdlohn60[teilnehmerzahl-1]
+        stdlohn_netto = meta.stdlohn60n[teilnehmerzahl-1]
+    elif dauer == 40:
+        stdlohn = meta.stdlohn40[teilnehmerzahl-1]
+        stdlohn_netto = meta.stdlohn40n[teilnehmerzahl-1]
+    else:
+        print('Keine gültige Trainingsdauer angegeben', file=sys.stderr)
+        return 0
 
-  # Speichere und zähle alle Kinder, die zu einer Rechnung gehören
-  kinder = ''
-  kindercnt = 0
+    if gesamtpreis % stdlohn == 0:
+        einheiten = int(gesamtpreis/stdlohn)
+    else:
+        print('Gesamtpreis ist kein Vielfaches des Stundenlohns',
+              file=sys.stderr)
 
-  # Iteriere über alle Kinder um Referenzzeile zu erstellen
-  for kind in rechnung.findall('kind'):
-    # Speichere alle Kindername in @kinder
-    kindercnt += 1
-    if kindercnt > 1:
-      kinder += ', '
-    kinder += kind.find('name').text
+    if training.find('foerderung').text == 'ja':
+        foerderung = gesamtpreis_netto
+        zahlbetrag = 0.
+        zahlbetrag_brutto = 0.
+    else:
+        foerderung = 0.
+        zahlbetrag = gesamtpreis_netto
+        zahlbetrag_brutto = gesamtpreis/teilnehmerzahl
 
-  # Gib Referenzzeile aus
-  jahr_current = datetime.date.today().year
-  print('\Referenz{', jahr_current-2000, '/{:04d}'.format(rechnungsnummer),
-      '}{', von_monat, '}{', bis_monat, ' ', jahr, '}{', kinder, '}', sep='')
+    nettopreise.append(round(zahlbetrag,2))
+    bruttopreise.append(round(zahlbetrag_brutto,2))
 
-  # Variablen zum Zwischenspeichern der Brutto und Nettobeträge gerundet
-  # auf zwei Nachkommastellen
-  nettopreise16 = []
-  bruttopreise16 = []
-  nettopreise7 = []
-  bruttopreise7 = []
+    posten = ('\\Posten{' +
+              training.find('tag').text + '}{' +
+              str(einheiten) + '}{' +
+              '{:.2f}'.format(stdlohn_netto*60/dauer).replace('.',',') + '}{' +
+              str(teilnehmerzahl) + '}{' +
+              str(dauer) + '}{' +
+              '{:.2f}'.format(gesamtpreis_netto).replace('.',',') + '}{' +
+              '{:.2f}'.format(foerderung).replace('.',',') + '}{' +
+              '{:.2f}'.format(zahlbetrag).replace('.',',') + '}\n')
+    return posten
 
-  # Iteriere über alle Kinder um Posten zu berechnen
-  for kind in rechnung.findall('kind'):
 
-    # Berechne Trainings und Hallenposten
-    posten_training = []
-    posten_halle = []
-    for training in kind.findall('training'):
-      if training.find('bezahlt').text != 'ja':
-        posten_training.append(erstelle_posten(training,
-          nettopreise16, bruttopreise16))
-      posten_halle.append(erstelle_hallenposten(training,
-        nettopreise7, bruttopreise7))
+def erstelle_hallenposten(training, meta, nettopreise, bruttopreise):
+    """Erzeugt Hallenposten aus einem Trainingsblock.
 
-    # Name des Kindes
-    name = kind.find('name').text
+       @training: xml-tree eines Trainingselements
+       @meta: Metadaten gültig für alle Rechnungen
+       @nettopreise: Rückgabeliste für Nettopreise (Cent Genauigkeit)
+       @bruttopreise: Rückgabeliste für Bruttopreise (Cent Genauigkeit)
+    """
+    wochentag = training.find('tag').text
 
-    # Trainingskosten ausgeben, falls posten_training nicht leer ist
-    # Falls mehrere Kinder gib Name des Kindes in Klammern an
-    if posten_training:
+    einheiten = 0
+    halleneinheiten = training.find('halleneinheiten')
+    if halleneinheiten is None:
+      einheiten = meta.wochentage_cnt[wochentage_dic[wochentag]]
+    else:
+      einheiten = int(halleneinheiten.text)
+
+    teilnehmerzahl = int(training.find('teilnehmerzahl').text)
+
+    dauer = int(training.find('dauer').text)
+
+    gesamtpreis_netto = einheiten*meta.stdhalle_netto*dauer/(60*teilnehmerzahl)
+
+    nettopreise.append(round(gesamtpreis_netto,2))
+    bruttopreise.append(
+        round(einheiten * meta.stdhalle * dauer / (60 * teilnehmerzahl), 2))
+
+    posten = ('\\Posten{' +
+              wochentag + '}{' +
+              str(einheiten) + '}{' +
+              '{:.2f}'.format(meta.stdhalle_netto).replace('.',',') + '}{' +
+              str(teilnehmerzahl) + '}{' +
+              str(dauer) + '}{' +
+              '{:.2f}'.format(gesamtpreis_netto).replace('.',',') + '}{' +
+              '{:.2f}'.format(0).replace('.',',') + '}{' +
+              '{:.2f}'.format(gesamtpreis_netto).replace('.',',') + '}\n')
+    return posten
+
+
+def erstelle_rechnung(rechnung, rechnungsnummer, meta):
+    """Erstellt eine Rechnung.
+
+       @rechnung: xml-tree eines Rechnungelements
+       @rechnungsnummer: fortlaufende Rechnungsnummer
+       @meta: Metadaten gültig für alle Rechnungen
+    """
+    latex_out = ('\\Empfaenger{' + rechnung.find('name').text + '}{'
+                 + rechnung.find('strasse').text + '}{'
+                 + rechnung.find('ort').text + '}\n')
+
+    kinder = ''
+    kindercnt = 0
+
+    for kind in rechnung.findall('kind'):
+      kindercnt += 1
       if kindercnt > 1:
-        print('\Kostentyp{Trainingskosten (' + name + ')}')
-      else:
-        print('\Kostentyp{Trainingskosten}')
-      for posten in posten_training:
-        print(posten)
+          kinder += ', '
+      kinder += kind.find('name').text
 
-    # Hallenkosten ausgeben falls Hallensaison ist
-    # Falls mehrere Kinder gib Name des Kindes in Klammern an
-    if hallensaison:
-      if kindercnt > 1:
-        print('\Kostentyp{Hallenkosten (' + name + ')}')
-      else:
-        print('\Kostentyp{Hallenkosten}')
-      for posten in posten_halle:
-        print(posten)
+    jahr_current = datetime.date.today().year
+    latex_out += ('\\Referenz{' + str(jahr_current-2000)
+                  + '/{:04d}'.format(rechnungsnummer)
+                  + '}{' + meta.von_monat
+                  + '}{' + meta.bis_monat + ' ' + str(meta.jahr)
+                  + '}{' + kinder + '}\n')
 
-  # Summe mit und ohne MwSt
-  sumnp16 = sum(nettopreise16)
-  sumbp16 = sum(bruttopreise16)
-  sumnp7 = sum(nettopreise7)
-  sumbp7 = sum(bruttopreise7)
+    nettopreise16 = []
+    bruttopreise16 = []
+    nettopreise7 = []
+    bruttopreise7 = []
 
-  # Nur in der Wintersaison wird 7% MwSt ausgegeben
-  if hallensaison:
-    print('\SummeWinter{',
-        '{:.2f}'.format(sumnp16+sumnp7).replace('.',','), '}{',
-        '{:.2f}'.format(sumbp16-sumnp16).replace('.',','), '}{',
-        '{:.2f}'.format(sumbp7-sumnp7).replace('.',','), '}{',
-        '{:.2f}'.format(sumbp16+sumbp7).replace('.',','), '}',
-        sep='')
-  else:
-    print('\SummeSommer{',
-        '{:.2f}'.format(sumnp16).replace('.',','), '}{',
-        '{:.2f}'.format(sumbp16-sumnp16).replace('.',','), '}{',
-        '{:.2f}'.format(sumbp16).replace('.',','), '}',
-        sep='')
-    
+    for kind in rechnung.findall('kind'):
+      posten_training = []
+      posten_halle = []
+      for training in kind.findall('training'):
+          if training.find('bezahlt').text != 'ja':
+              posten_training.append(erstelle_posten(training, meta,
+                                                     nettopreise16,
+                                                     bruttopreise16))
+          posten_halle.append(erstelle_hallenposten(training, meta,
+                                                    nettopreise7,
+                                                    bruttopreise7))
+
+      name = kind.find('name').text
+
+      if posten_training:
+          if kindercnt > 1:
+              latex_out += '\\Kostentyp{Trainingskosten (' + name + ')}\n'
+          else:
+              latex_out += '\\Kostentyp{Trainingskosten}\n'
+          for posten in posten_training:
+              latex_out += posten
+
+      if meta.hallensaison:
+          if kindercnt > 1:
+              latex_out += '\\Kostentyp{Hallenkosten (' + name + ')}\n'
+          else:
+              latex_out += '\\Kostentyp{Hallenkosten}\n'
+          for posten in posten_halle:
+              latex_out += posten
+
+    sumnp16 = sum(nettopreise16)
+    sumbp16 = sum(bruttopreise16)
+    sumnp7 = sum(nettopreise7)
+    sumbp7 = sum(bruttopreise7)
+
+    if meta.hallensaison:
+        latex_out += ('\\SummeWinter{'
+                      + '{:.2f}'.format(sumnp16 + sumnp7).replace('.', ',')
+                      + '}{'
+                      + '{:.2f}'.format(sumbp16 - sumnp16).replace('.', ',')
+                      + '}{'
+                      + '{:.2f}'.format(sumbp7 - sumnp7).replace('.', ',')
+                      + '}{'
+                      + '{:.2f}'.format(sumbp16 + sumbp7).replace('.', ',')
+                      + '}\n')
+    else:
+        latex_out += ('\\SummeSommer{'
+                      + '{:.2f}'.format(sumnp16).replace('.', ',')
+                      + '}{'
+                      + '{:.2f}'.format(sumbp16-sumnp16).replace('.', ',')
+                      + '}{',
+                      + '{:.2f}'.format(sumbp16).replace('.',','), '}\n')
+
+    latex_out += ('\\Schluss{' + meta.von_monat + '}{' + meta.bis_monat
+                  + ' ' + str(meta.jahr) + '}{' + str(meta.jahr+1) + '}\n\n')
+    return latex_out
 
 
-  # Abschluss der Rechnung
-  print('\Schluss{', von_monat, '}{', bis_monat, ' ', jahr, '}{', jahr+1, '}',
-      sep='')
+def erstelle_mail(rechnung, rechnungsnummer, meta, texfile):
+    """Erstellt Mailausgabe
 
-  print()
+       @rechnung: xml-tree eines Rechnungelements
+       @meta: Metadaten gültig für alle Rechnungen
+    """
+    email = rechnung.find('email')
+    if email == None:
+        return ''
+    email_out = email.text
+
+    name = rechnung.find('name').text
+    anrede = name.split(' ', 1)[0]
+    if anrede == 'Familie' or anrede == 'Frau':
+        anrede_out = 'Liebe ' + name
+    elif anrede == 'Herr':
+        anrede_out = 'Lieber ' + name
+
+    kinder = rechnung.findall('kind')
+    kinder_out = kinder[0].find('name').text
+    for kind in kinder[1:-1]:
+        kinder_out += ', ' + kind.find('name').text
+    if len(kinder) > 1:
+        kinder_out += ' und ' + kinder[-1].find('name').text
+
+    texfile = texfile.replace('tex', 'pdf')
+
+    return (anrede_out + ';'
+            + email_out + ';'
+            + kinder_out + ';'
+            + meta.von_monat + ';'
+            + meta.bis_monat + ';'
+            + str(meta.jahr) + ';'
+            + texfile + '\n')
+
 
 def run():
     """Beginne Auswertung der xml-Datei und starte Rechnungserstellung
     """
-    # Werte Parameter aus
-    if len(sys.argv) != 2:
-      print('Verwendung:', sys.argv[0], 'daten.xml')
-      sys.exit(1)
+    parser = argparse.ArgumentParser(
+        prog = 'tcsrechnung',
+        description = 'Erstelle LaTeX Datei für TCS Rechnungen')
+    parser.add_argument('-i', required=True,
+                        help='Eingabedatei (xml Format)')
+    parser.add_argument('-o', required=True,
+                        help='Ausgabeordner Rechnungen (tex Format)')
+    parser.add_argument('-m', required=True,
+                        help='Ausgabedatei Emails (csv Format)')
+    args = parser.parse_args()
 
-    # Öffne die xml-Daten, die als erstes Argument übergeben wurde
-    tree = ET.parse(sys.argv[1])
+    tree = ET.parse(args.i)
     root = tree.getroot()
+    if not os.path.exists(args.o):
+        os.makedirs(args.o)
+    if args.o[-1] != '/':
+        args.o = args.o + '/'
+    meta = Metadaten(root)
 
-    # Jahr
-    global jahr
-    jahr = int(root.find('jahr').text)
-
-    # Erster Monat
-    global von_monat
-    von_monat = root.find('von').text
-    von_datum = datetime.date(jahr, monate_dic[von_monat], 1)
-
-    # Letzter Monat
-    global bis_monat
-    bis_monat = root.find('bis').text
-    bis_datum = datetime.date(jahr, monate_dic[bis_monat],
-        calendar.monthrange(jahr, monate_dic[bis_monat])[1])
-
-    # Trainingskosten für 1,2,3,4 Personen festlegen, für 60 und 40min
-    global stdlohn60
-    stdlohn60.append(int(root.find('stdkosten60').find('p1').text))
-    stdlohn60.append(int(root.find('stdkosten60').find('p2').text))
-    stdlohn60.append(int(root.find('stdkosten60').find('p3').text))
-    stdlohn60.append(int(root.find('stdkosten60').find('p4').text))
-    stdlohn60.append(int(root.find('stdkosten60').find('p5').text))
-    global stdlohn40
-    stdlohn40.append(int(root.find('stdkosten40').find('p1').text))
-    stdlohn40.append(int(root.find('stdkosten40').find('p2').text))
-    stdlohn40.append(int(root.find('stdkosten40').find('p3').text))
-    stdlohn40.append(int(root.find('stdkosten40').find('p4').text))
-
-    # Berechne Nettostundenlöhne
-    global stdlohn60n
-    for i in stdlohn60:
-      stdlohn60n.append(i/1.19)
-    global stdlohn40n
-    for i in stdlohn40:
-      stdlohn40n.append(i/1.19)
-
-    # Beginn Hallensaison
-    beginn_halle_str = root.find('beginn_halle').text
-    beginn_halle = datetime.datetime.strptime(beginn_halle_str,
-            '%d-%m-%Y').date()
-    ende_halle = beginn_halle + datetime.timedelta(30*7-1)
-
-    # Überprüfe ob Rechnungen im Hallenzeitraum erstellt werden
-    global hallensaison
-    if (bis_datum > beginn_halle and bis_datum < ende_halle) or\
-        (von_datum > beginn_halle and von_datum < ende_halle):
-      hallensaison = True
-      print('Im Rechnungszeitraum ist Hallensaison', file=sys.stderr) 
-    else:
-      print('Im Rechnungszeitraum ist keine Hallensaison', file=sys.stderr) 
-      hallensaison = False
-
-    # Zähle Wochentage in der Schnittmenge Hallensaison und Rechnungszeitraum
-    global wochentage_cnt
-    for i in range(7):
-      cur_datum = von_datum + datetime.timedelta(i)
-      cnt = 0
-      woche_delta = datetime.timedelta(7)
-      while cur_datum <= ende_halle and cur_datum <= bis_datum:
-        cnt += 1
-        cur_datum += woche_delta
-      wochentage_cnt[cur_datum.weekday()] = cnt
-
-    # Hallenkosten für eine Stunde, brutto und netto
-    global stdhalle
-    stdhalle = int(root.find('hallenkosten').text)
-    global stdhalle_netto
-    stdhalle_netto = stdhalle/1.07
-
-    # Rechnungsnummer der ersten Rechnung minus Eins
-    rechnungsnummer = int(root.find('rechnungsnummer').text)
-
-    # Beginne Latex-Document
-    print("\\documentclass{tcsrechnung}\n\n\\begin{document}\n")
-    # Iteriere über alle Rechnungsblöcke und erstelle zugehörige Latex-Kommandos
-    for rechnung in root.findall('rechnung'):
-      rechnungsnummer += 1
-      erstelle_rechnung(rechnung, rechnungsnummer)
-    
-    print('\end{document}\n')
+    with open(args.m, 'w') as f_mail:
+        rechnungsnr = int(root.find('rechnungsnummer').text)
+        for rechnung in root.findall('rechnung'):
+            rechnungsnr += 1
+            texfile = (args.o + str(meta.jahr) + '_' + str(rechnungsnr)
+                       + '.tex')
+            with open(texfile, 'w') as f_tex:
+                f_tex.write('\\documentclass{tcsrechnung}\n')
+                f_tex.write('\\begin{document}\n')
+                f_tex.write(erstelle_rechnung(rechnung, rechnungsnr, meta))
+                f_tex.write('\\end{document}\n')
+            f_mail.write(erstelle_mail(rechnung, rechnungsnr, meta, texfile))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     run()
-
