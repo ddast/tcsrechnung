@@ -8,9 +8,8 @@ then
 fi
 echo "${filename}"
 
-python3 tcsrechnung.py -i "${filename}".xml -o tex -m mails.csv
-rm -rf tmp/*.pdf
-for i in tex/*.tex; do latexmk -pdf -outdir=tmp "${i}"; done
-rm -rf pdf/
+rm -rf tex/ tmp/ pdf/ mails.csv
+python3 tcsrechnung.py -i "${filename}".xml -o tex -m mails.csv -p pdf
+for i in tex/*.tex; do latexmk -silent -interaction=nonstopmode -pdf -outdir=tmp "${i}"; done
 mkdir -p pdf/
-cp tmp/*.pdf pdf/
+mv tmp/*.pdf pdf/
