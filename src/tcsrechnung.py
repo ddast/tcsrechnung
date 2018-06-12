@@ -348,7 +348,9 @@ def run():
     parser.add_argument('-m', required=True,
                         help='Ausgabedatei Emails (csv Format)')
     parser.add_argument('-p', required=True,
-                        help='Ausgabeordner Rechnunge (pdf Format)')
+                        help='Ausgabeordner Rechnungen (pdf Format)')
+    parser.add_argument('--nosingle', action='store_true',
+                        help='Erstelle keine einzelnen Rechnungsdateien')
     args = parser.parse_args()
 
     tree = ET.parse(args.i)
@@ -357,18 +359,22 @@ def run():
         os.makedirs(args.o)
     meta = Metadaten(root)
 
-    with open(args.m, 'w') as f_mail,\
-            open(os.path.join(args.o, 'all.tex'), 'w') as f_tex_all:
+    texfile_all = os.path.join(args.o, 'rechnungen_' + str(meta.jahr)
+                               + '_' + str(monate_dic[meta.von_monat]) + '-'
+                               + str(monate_dic[meta.bis_monat]) + '.tex')
+    with open(args.m, 'w') as f_mail, open(texfile_all, 'w') as f_tex_all:
         f_mail.write(get_mail_header())
         f_tex_all.write('\\documentclass{tcsrechnung}\n')
         f_tex_all.write('\\begin{document}\n')
         rechnungsnr = int(root.find('rechnungsnummer').text)
         for rechnung in root.findall('rechnung'):
             rechnungsnr += 1
-            texfile = os.path.join(args.o, str(meta.jahr_cur-2000)
-                                   + '_{:04d}'.format(rechnungsnr) + '.tex')
             output = erstelle_rechnung(rechnung, rechnungsnr, meta)
             f_tex_all.write(output)
+            if args.nosingle:
+                continue
+            texfile = os.path.join(args.o, str(meta.jahr_cur-2000)
+                                   + '_{:04d}'.format(rechnungsnr) + '.tex')
             with open(texfile, 'w') as f_tex:
                 f_tex.write('\\documentclass{tcsrechnung}\n')
                 f_tex.write('\\begin{document}\n')
