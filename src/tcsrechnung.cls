@@ -22,10 +22,7 @@
   fromalign=left,                 % Absender im Briefkopf linksbündig
   fromlogo,                       % Setze Logo im Header
   fromrule=afteraddress,          % Linie unter Header
-  %subject=titled                 % Spitzmarke Betrifft:
   enlargefirstpage=on,            % Erste Seite darf vergrößert werden
-  %headsepline,
-  %headtopline,
   version=last                    % Neueste Komaversion ohne Kompatibilität
 ]{scrlttr2}
 
@@ -95,12 +92,6 @@
 \setkomavar{fromlogo}{\includegraphics[width=3cm]{tcslogo}}
 
 % Bankverbindung als Tabelle formatiert
-%\setkomavar{frombank}{%
-%  \begin{tabular}[t]{@{}l@{ }r@{ }l@{ }l@{}}%
-%    Konto & 260\,788\,007, & BLZ 611\,616\,96, & Volksbank Filder eG\\
-%    Konto & 10\,781\,704, & BLZ 611\,500\,20, & Kreissparkasse Esslingen%
-%  \end{tabular}%
-%}
 \setkomavar{frombank}{%
   \begin{tabular}[t]{@{}l@{ }l@{ }l@{}}%
     Voba Filder, & IBAN DE38611616960260788007, & BIC GENODES1NHB\\
@@ -133,8 +124,6 @@
 \setkomafont{pagenumber}{\normalsize}
 
 \setheadwidth{\useplength{firstheadwidth}}
-%\setheadtopline{.4pt}
-%\setheadsepline{current}
 \chead{}
 \ihead{\usekomavar{fromname}\\\usekomavar{fromaddress}}
 \ohead{\includegraphics[width=9mm]{tcslogo}}
@@ -143,18 +132,6 @@
 \cfoot{}
 \ifoot{\\[28.4mm]\usekomavar{frombank}}
 \ofoot{\\[28.4mm]\usekomavar{fromtaxes}}
-%\setkomavar{nextfoot}{%
-%  \parbox[t]{\textwidth}{%
-%    \centering
-%    \pagemark
-%    \\[8ex]
-%    \normalfont\footnotesize
-%    \usekomavar{frombank}%
-%    \hfill
-%    \usekomavar{fromtaxes}%
-%  }%
-%}
-%\setkomavar{nexthead}{\usekomavar{firsthead}}
 
 % Rücksendeadresse
 \setkomavar{backaddress}{Donald Duck\\
