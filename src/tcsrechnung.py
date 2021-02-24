@@ -57,7 +57,6 @@ class Metadaten():
                         Rechnungszeitraum
      """
 
-
     def __init__(self, root):
         """Initialisiere verwendete Variablen.
 
@@ -80,18 +79,18 @@ class Metadaten():
         self.wochentage_cnt = [0]*7
         self._init_hallensaison(root)
 
-
     def _init_hallensaison(self, root):
         """Initialisiert self.hallensaison und self.wochentage_cnt."""
         von_datum = datetime.date(self.jahr, MONATE_DIC[self.von_monat], 1)
-        bis_datum = datetime.date(self.jahr, MONATE_DIC[self.bis_monat],
-            calendar.monthrange(self.jahr, MONATE_DIC[self.bis_monat])[1])
+        bis_datum = datetime.date(
+                self.jahr, MONATE_DIC[self.bis_monat],
+                calendar.monthrange(self.jahr, MONATE_DIC[self.bis_monat])[1])
         beginn_halle_str = root.find('beginn_halle').text
         beginn_halle = datetime.datetime.strptime(beginn_halle_str,
-            '%d-%m-%Y').date()
+                                                  '%d-%m-%Y').date()
         ende_halle = beginn_halle + datetime.timedelta(30*7-1)
         if ((beginn_halle < bis_datum < ende_halle) or
-            (beginn_halle < von_datum < ende_halle)):
+                (beginn_halle < von_datum < ende_halle)):
             print('Im Rechnungszeitraum ist Hallensaison.')
             self.hallensaison = True
         else:
@@ -149,18 +148,18 @@ def erstelle_posten(training, meta, nettopreise, bruttopreise):
         zahlbetrag = gesamtpreis_netto
         zahlbetrag_brutto = gesamtpreis/teilnehmerzahl
 
-    nettopreise.append(round(zahlbetrag,2))
-    bruttopreise.append(round(zahlbetrag_brutto,2))
+    nettopreise.append(round(zahlbetrag, 2))
+    bruttopreise.append(round(zahlbetrag_brutto, 2))
 
     posten = ('\\Posten{' +
               training.find('tag').text + '}{' +
               str(einheiten) + '}{' +
-              '{:.2f}'.format(stdlohn_netto*60/dauer).replace('.',',') + '}{' +
-              str(teilnehmerzahl) + '}{' +
-              str(dauer) + '}{' +
-              '{:.2f}'.format(gesamtpreis_netto).replace('.',',') + '}{' +
-              '{:.2f}'.format(foerderung).replace('.',',') + '}{' +
-              '{:.2f}'.format(zahlbetrag).replace('.',',') + '}\n')
+              '{:.2f}'.format(stdlohn_netto*60/dauer).replace('.', ',') +
+              '}{' + str(teilnehmerzahl) + '}{'
+              + str(dauer) + '}{' +
+              '{:.2f}'.format(gesamtpreis_netto).replace('.', ',') + '}{' +
+              '{:.2f}'.format(foerderung).replace('.', ',') + '}{' +
+              '{:.2f}'.format(zahlbetrag).replace('.', ',') + '}\n')
     return posten
 
 
@@ -187,19 +186,19 @@ def erstelle_hallenposten(training, meta, nettopreise, bruttopreise):
 
     gesamtpreis_netto = einheiten*meta.stdhalle_netto*dauer/(60*teilnehmerzahl)
 
-    nettopreise.append(round(gesamtpreis_netto,2))
+    nettopreise.append(round(gesamtpreis_netto, 2))
     bruttopreise.append(
         round(einheiten * meta.stdhalle * dauer / (60 * teilnehmerzahl), 2))
 
     posten = ('\\Posten{' +
               wochentag + '}{' +
               str(einheiten) + '}{' +
-              '{:.2f}'.format(meta.stdhalle_netto).replace('.',',') + '}{' +
+              '{:.2f}'.format(meta.stdhalle_netto).replace('.', ',') + '}{' +
               str(teilnehmerzahl) + '}{' +
               str(dauer) + '}{' +
-              '{:.2f}'.format(gesamtpreis_netto).replace('.',',') + '}{' +
-              '{:.2f}'.format(0).replace('.',',') + '}{' +
-              '{:.2f}'.format(gesamtpreis_netto).replace('.',',') + '}\n')
+              '{:.2f}'.format(gesamtpreis_netto).replace('.', ',') + '}{' +
+              '{:.2f}'.format(0).replace('.', ',') + '}{' +
+              '{:.2f}'.format(gesamtpreis_netto).replace('.', ',') + '}\n')
     return posten
 
 
@@ -285,7 +284,7 @@ def erstelle_rechnung(rechnung, rechnungsnummer, meta):
                       + '}{'
                       + '{:.2f}'.format(sumbp16-sumnp16).replace('.', ',')
                       + '}{'
-                      + '{:.2f}'.format(sumbp16).replace('.',',')
+                      + '{:.2f}'.format(sumbp16).replace('.', ',')
                       + '}\n')
 
     latex_out += ('\\Schluss{' + meta.von_monat + '}{' + meta.bis_monat
@@ -342,8 +341,8 @@ def run():
     """Beginne Auswertung der xml-Datei und starte Rechnungserstellung
     """
     parser = argparse.ArgumentParser(
-        prog = 'tcsrechnung',
-        description = 'Erstelle LaTeX Datei für TCS Rechnungen')
+        prog='tcsrechnung',
+        description='Erstelle LaTeX Datei für TCS Rechnungen')
     parser.add_argument('-i', required=True,
                         help='Eingabedatei (xml Format)')
     parser.add_argument('-o', required=True,
