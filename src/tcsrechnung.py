@@ -24,6 +24,8 @@ import datetime
 import calendar
 import argparse
 
+MWST_VOLL = 0.19
+MWST_ERM = 0.07
 
 wochentage_dic = {
     'Montag': 0, 'Dienstag': 1, 'Mittwoch': 2,
@@ -69,10 +71,10 @@ class Metadaten():
                           for p in ['p1', 'p2', 'p3', 'p4', 'p5']]
         self.stdlohn40 = [int(root.find('stdkosten40').find(p).text)
                           for p in ['p1', 'p2', 'p3', 'p4']]
-        self.stdlohn60n = [i / 1.19 for i in self.stdlohn60]
-        self.stdlohn40n = [i / 1.19 for i in self.stdlohn40]
+        self.stdlohn60n = [i / (1.0 + MWST_VOLL) for i in self.stdlohn60]
+        self.stdlohn40n = [i / (1.0 + MWST_VOLL) for i in self.stdlohn40]
         self.stdhalle = int(root.find('hallenkosten').text)
-        self.stdhalle_netto = self.stdhalle/1.07
+        self.stdhalle_netto = self.stdhalle/(1.0+MWST_ERM)
 
         self.hallensaison = False
         self.wochentage_cnt = [0]*7
@@ -120,7 +122,7 @@ def erstelle_posten(training, meta, nettopreise, bruttopreise):
     gesamtpreis = 0
     for preis in training.findall('preis'):
         gesamtpreis += int(preis.text)
-    gesamtpreis_netto = gesamtpreis/(teilnehmerzahl*1.19)
+    gesamtpreis_netto = gesamtpreis/(teilnehmerzahl*(1.0+MWST_VOLL))
 
     if dauer == 60:
         stdlohn = meta.stdlohn60[teilnehmerzahl-1]
