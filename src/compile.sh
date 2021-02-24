@@ -1,14 +1,12 @@
-#!/bin/bash
+#!/bin/sh
 
-if [ "${#}" -eq 1 ]; then
-  xmlfile="${1}"
-elif [ "${#}" -eq 2 ]; then
-  xmlfile="${1}"
-  option="${2}"
+if [ "$#" -ge 1 ]; then
+  xmlfile="$1"
+  shift
 else
-  echo "Verwendung: ${0} xmldatei argument"
-  echo "xmldate: Enthält xml Beschreibung der Rechnungen"
-  echo "argument: Ein weiteres Argument, das an tcsrechung weitergegeben wird"
+  echo "Verwendung: $0 xmldatei arguments"
+  echo "xmldatei: Enthält xml Beschreibung der Rechnungen"
+  echo "argument: Weitere Argumente, die an tcsrechung weitergegeben werden"
   exit 1
 fi
 
@@ -17,25 +15,20 @@ pdfdir="pdf"
 mailfile="mails.csv"
 builddir="tmp"
 
-if [ ! -f "${xmlfile}" ]; then
-  echo "Datei existiert nicht: ${xmlfile}"
+if [ ! -f "$xmlfile" ]; then
+  echo "Datei existiert nicht: $xmlfile"
   exit 1
 fi
 
-rm -rf "${texdir}" "${pdfdir}" "${builddir}" "${mailfile}"
+rm -rf "$texdir" "$pdfdir" "$builddir" "$mailfile"
 
-if [ -z "${option}" ]; then
-  tcsrechnung -i "${xmlfile}" -o "${texdir}" -m "${mailfile}" -p "${pdfdir}"
-else
-  tcsrechnung -i "${xmlfile}" -o "${texdir}" -m "${mailfile}" -p "${pdfdir}" "${option}"
-fi
+tcsrechnung -i "$xmlfile" -o "$texdir" -m "$mailfile" -p "$pdfdir" "$@"
 
-for i in "${texdir}"/*.tex; do
-  latexmk -silent -interaction=nonstopmode -pdf -outdir="${builddir}" "${i}"
+for i in "$texdir"/*.tex; do
+  latexmk -silent -interaction=nonstopmode -pdf -outdir="$builddir" "$i"
 done
 
-mkdir "${pdfdir}"
-mv "${builddir}"/*.pdf "${pdfdir}"
+mkdir "$pdfdir"
+mv "$builddir"/*.pdf "$pdfdir"
 
-
-rm -r "${texdir}" "${builddir}"
+rm -r "$texdir" "$builddir"
