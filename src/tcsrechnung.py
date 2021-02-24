@@ -90,8 +90,8 @@ class Metadaten():
         beginn_halle = datetime.datetime.strptime(beginn_halle_str,
             '%d-%m-%Y').date()
         ende_halle = beginn_halle + datetime.timedelta(30*7-1)
-        if ((bis_datum > beginn_halle and bis_datum < ende_halle) or
-            (von_datum > beginn_halle and von_datum < ende_halle)):
+        if ((beginn_halle < bis_datum < ende_halle) or
+            (beginn_halle < von_datum < ende_halle)):
             print('Im Rechnungszeitraum ist Hallensaison.')
             self.hallensaison = True
         else:
