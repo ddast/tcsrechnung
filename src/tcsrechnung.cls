@@ -224,8 +224,8 @@
     \begin{samepage2}
       Fördergelder des Vereins TC Stetten im Jugend- und Aktivenbereich, welche
       in der Zeit von #1 bis #2 geleistet wurden, sind vollständig zurück zu
-      erstatten, falls der/die Spieler/in den Verein zur Saison #3 verlassen
-      sollte.
+      erstatten, falls der Spieler oder die Spielerin den Verein zur Saison #3
+      verlassen sollte.
       
       \textbf{Mit der Bezahlung der Rechnung werden diese Bedingungen
       anerkannt.}
