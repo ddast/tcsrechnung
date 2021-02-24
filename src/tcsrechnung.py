@@ -306,7 +306,7 @@ def erstelle_mail(rechnung, rechnungsnummer, meta, texfile, folder):
 
     name = rechnung.find('name').text
     anrede = name.split(' ', 1)[0]
-    if anrede == 'Familie' or anrede == 'Frau':
+    if anrede in ['Familie', 'Frau']:
         anrede_out = 'Liebe ' + name
     elif anrede == 'Herrn':
         anrede_out = 'Lieber Herr ' + name.split(' ', 1)[1]
