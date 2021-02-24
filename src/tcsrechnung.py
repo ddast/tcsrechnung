@@ -27,11 +27,11 @@ import argparse
 MWST_VOLL = 0.19
 MWST_ERM = 0.07
 
-wochentage_dic = {
+WOCHENTAGE_DIC = {
     'Montag': 0, 'Dienstag': 1, 'Mittwoch': 2,
     'Donnerstag': 3, 'Freitag': 4, 'Samstag': 5, 'Sonntag': 6
     }
-monate_dic = {
+MONATE_DIC = {
     'Januar': 1, 'Februar': 2, 'März': 3, 'April': 4, 'Mai': 5,
     'Juni': 6, 'Juli': 7, 'August': 8, 'September': 9, 'Oktober': 10,
     'November': 11, 'Dezember': 12
@@ -83,9 +83,9 @@ class Metadaten():
 
     def _init_hallensaison(self, root):
         """Initialisiert self.hallensaison und self.wochentage_cnt."""
-        von_datum = datetime.date(self.jahr, monate_dic[self.von_monat], 1)
-        bis_datum = datetime.date(self.jahr, monate_dic[self.bis_monat],
-            calendar.monthrange(self.jahr, monate_dic[self.bis_monat])[1])
+        von_datum = datetime.date(self.jahr, MONATE_DIC[self.von_monat], 1)
+        bis_datum = datetime.date(self.jahr, MONATE_DIC[self.bis_monat],
+            calendar.monthrange(self.jahr, MONATE_DIC[self.bis_monat])[1])
         beginn_halle_str = root.find('beginn_halle').text
         beginn_halle = datetime.datetime.strptime(beginn_halle_str,
             '%d-%m-%Y').date()
@@ -177,7 +177,7 @@ def erstelle_hallenposten(training, meta, nettopreise, bruttopreise):
     einheiten = 0
     halleneinheiten = training.find('halleneinheiten')
     if halleneinheiten is None:
-      einheiten = meta.wochentage_cnt[wochentage_dic[wochentag]]
+      einheiten = meta.wochentage_cnt[WOCHENTAGE_DIC[wochentag]]
     else:
       einheiten = int(halleneinheiten.text)
 
@@ -363,8 +363,8 @@ def run():
     meta = Metadaten(root)
 
     texfile_all = os.path.join(args.o, 'rechnungen_' + str(meta.jahr)
-                               + '_' + str(monate_dic[meta.von_monat]) + '-'
-                               + str(monate_dic[meta.bis_monat]) + '.tex')
+                               + '_' + str(MONATE_DIC[meta.von_monat]) + '-'
+                               + str(MONATE_DIC[meta.bis_monat]) + '.tex')
     with open(args.m, 'w') as f_mail, open(texfile_all, 'w') as f_tex_all:
         f_mail.write(get_mail_header())
         f_tex_all.write('\\documentclass{tcsrechnung}\n')
