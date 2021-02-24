@@ -282,8 +282,9 @@ def erstelle_rechnung(rechnung, rechnungsnummer, meta):
                       + '{:.2f}'.format(sumnp16).replace('.', ',')
                       + '}{'
                       + '{:.2f}'.format(sumbp16-sumnp16).replace('.', ',')
-                      + '}{',
-                      + '{:.2f}'.format(sumbp16).replace('.',','), '}\n')
+                      + '}{'
+                      + '{:.2f}'.format(sumbp16).replace('.',',')
+                      + '}\n')
 
     latex_out += ('\\Schluss{' + meta.von_monat + '}{' + meta.bis_monat
                   + ' ' + str(meta.jahr) + '}{' + str(meta.jahr+1) + '}\n\n')
