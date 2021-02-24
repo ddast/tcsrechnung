@@ -177,9 +177,9 @@ def erstelle_hallenposten(training, meta, nettopreise, bruttopreise):
     einheiten = 0
     halleneinheiten = training.find('halleneinheiten')
     if halleneinheiten is None:
-      einheiten = meta.wochentage_cnt[WOCHENTAGE_DIC[wochentag]]
+        einheiten = meta.wochentage_cnt[WOCHENTAGE_DIC[wochentag]]
     else:
-      einheiten = int(halleneinheiten.text)
+        einheiten = int(halleneinheiten.text)
 
     teilnehmerzahl = int(training.find('teilnehmerzahl').text)
 
@@ -218,10 +218,10 @@ def erstelle_rechnung(rechnung, rechnungsnummer, meta):
     kindercnt = 0
 
     for kind in rechnung.findall('kind'):
-      kindercnt += 1
-      if kindercnt > 1:
-          kinder += ', '
-      kinder += kind.find('name').text
+        kindercnt += 1
+        if kindercnt > 1:
+            kinder += ', '
+        kinder += kind.find('name').text
 
     latex_out += ('\\Referenz{' + str(meta.jahr_cur-2000)
                   + '/{:04d}'.format(rechnungsnummer)
@@ -235,34 +235,34 @@ def erstelle_rechnung(rechnung, rechnungsnummer, meta):
     bruttopreise7 = []
 
     for kind in rechnung.findall('kind'):
-      posten_training = []
-      posten_halle = []
-      for training in kind.findall('training'):
-          if training.find('bezahlt').text != 'ja':
-              posten_training.append(erstelle_posten(training, meta,
-                                                     nettopreise16,
-                                                     bruttopreise16))
-          posten_halle.append(erstelle_hallenposten(training, meta,
-                                                    nettopreise7,
-                                                    bruttopreise7))
+        posten_training = []
+        posten_halle = []
+        for training in kind.findall('training'):
+            if training.find('bezahlt').text != 'ja':
+                posten_training.append(erstelle_posten(training, meta,
+                                                       nettopreise16,
+                                                       bruttopreise16))
+            posten_halle.append(erstelle_hallenposten(training, meta,
+                                                      nettopreise7,
+                                                      bruttopreise7))
 
-      name = kind.find('name').text
+        name = kind.find('name').text
 
-      if posten_training:
-          if kindercnt > 1:
-              latex_out += '\\Kostentyp{Trainingskosten (' + name + ')}\n'
-          else:
-              latex_out += '\\Kostentyp{Trainingskosten}\n'
-          for posten in posten_training:
-              latex_out += posten
+        if posten_training:
+            if kindercnt > 1:
+                latex_out += '\\Kostentyp{Trainingskosten (' + name + ')}\n'
+            else:
+                latex_out += '\\Kostentyp{Trainingskosten}\n'
+            for posten in posten_training:
+                latex_out += posten
 
-      if meta.hallensaison:
-          if kindercnt > 1:
-              latex_out += '\\Kostentyp{Hallenkosten (' + name + ')}\n'
-          else:
-              latex_out += '\\Kostentyp{Hallenkosten}\n'
-          for posten in posten_halle:
-              latex_out += posten
+        if meta.hallensaison:
+            if kindercnt > 1:
+                latex_out += '\\Kostentyp{Hallenkosten (' + name + ')}\n'
+            else:
+                latex_out += '\\Kostentyp{Hallenkosten}\n'
+            for posten in posten_halle:
+                latex_out += posten
 
     sumnp16 = sum(nettopreise16)
     sumbp16 = sum(bruttopreise16)
