@@ -50,7 +50,7 @@
 \usepackage{lmodern}
 
 % Mehr Kontrolle über Kopf- und Fußzeilen 
-\usepackage{scrpage2}
+\usepackage{scrlayer-scrpage}
 
 % Verbesserter Blocksatz
 \usepackage{microtype}
