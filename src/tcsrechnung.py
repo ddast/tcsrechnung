@@ -293,7 +293,7 @@ def erstelle_rechnung(rechnung, rechnungsnummer, meta):
     return latex_out
 
 
-def erstelle_mail(rechnung, rechnungsnummer, meta, texfile, folder):
+def erstelle_mail(rechnung, meta, texfile, folder):
     """Erstellt Mailausgabe
 
        @rechnung: xml-tree eines Rechnungelements
@@ -383,8 +383,7 @@ def run():
                 f_tex.write('\\begin{document}\n')
                 f_tex.write(output)
                 f_tex.write('\\end{document}\n')
-            f_mail.write(erstelle_mail(rechnung, rechnungsnr, meta,
-                                       texfile, args.p))
+            f_mail.write(erstelle_mail(rechnung, meta, texfile, args.p))
         f_tex_all.write('\\end{document}\n')
 
 
