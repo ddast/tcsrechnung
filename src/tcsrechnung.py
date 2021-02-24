@@ -300,7 +300,7 @@ def erstelle_mail(rechnung, rechnungsnummer, meta, texfile, folder):
        @meta: Metadaten gültig für alle Rechnungen
     """
     email = rechnung.find('email')
-    if email == None or email.text == None:
+    if email is None or email.text is None:
         return ''
     email_out = email.text
 
