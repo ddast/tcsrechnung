@@ -175,7 +175,7 @@ def erstelle_hallenposten(training, meta, nettopreise, bruttopreise):
 
     einheiten = 0
     halleneinheiten = training.find('halleneinheiten')
-    if halleneinheiten is None:
+    if halleneinheiten is None or halleneinheiten.text is None:
         einheiten = meta.wochentage_cnt[WOCHENTAGE_DIC[wochentag]]
     else:
         einheiten = int(halleneinheiten.text)
