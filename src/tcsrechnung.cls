@@ -130,8 +130,8 @@
 
 \setfootwidth{\useplength{firstfootwidth}}
 \cfoot{}
-\ifoot{\\[28.4mm]\usekomavar{frombank}}
-\ofoot{\\[28.4mm]\usekomavar{fromtaxes}}
+\ifoot{\\[13.0mm]\usekomavar{frombank}}
+\ofoot{\\[13.0mm]\usekomavar{fromtaxes}}
 
 % Rücksendeadresse
 \setkomavar{backaddress}{Donald Duck\\
