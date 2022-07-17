@@ -47,7 +47,7 @@
 % lmodern Schrifttyp
 \usepackage{lmodern}
 
-% Mehr Kontrolle über Kopf- und Fußzeilen 
+% Mehr Kontrolle über Kopf- und Fußzeilen
 \usepackage{scrlayer-scrpage}
 
 % Verbesserter Blocksatz
