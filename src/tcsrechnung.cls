@@ -62,18 +62,9 @@
 % Zeilenabstand in Tabellen vergrößern (Standard 1)
 \renewcommand{\arraystretch}{1.25}
 
-
-% Definiere Umgebung, die keine Seitenumbrüche erlaubt
-\newlength{\currentparindent}
-\newlength{\currentparskip}
-\newenvironment{samepage2}
-  {\setlength{\currentparskip}{\parskip}
-   \setlength{\currentparindent}{\parindent}
-   \begin{minipage}{\textwidth}
-   \setlength{\parskip}{\currentparskip}
-   \setlength{\parindent}{\currentparindent}
-  }
-  {\end{minipage}}
+% Erhöhe Strafe für Widows und Clubs
+\widowpenalty10000
+\clubpenalty10000
 
 % Nutze scrpage2 Fuß- und Kopfzeilen
 \pagestyle{scrheadings}
@@ -218,17 +209,15 @@
 % Schreibt den Text unterhalb der Tabelle
 % \Schluss{erster Monat}{letzter Monat}{kommende Saison}
 \newcommand{\Schluss}[3]{
-    \begin{samepage2}
-      Fördergelder des Vereins TC Stetten im Jugend- und Aktivenbereich, welche
-      in der Zeit von #1 bis #2 geleistet wurden, sind vollständig zurück zu
-      erstatten, falls der Spieler oder die Spielerin den Verein zur Saison #3
-      verlassen sollte.
-      
-      \textbf{Mit der Bezahlung der Rechnung werden diese Bedingungen
-      anerkannt.}
+    Fördergelder des Vereins TC Stetten im Jugend- und Aktivenbereich, welche
+    in der Zeit von #1 bis #2 geleistet wurden, sind vollständig zurück zu
+    erstatten, falls der Spieler oder die Spielerin den Verein zur Saison #3
+    verlassen sollte.
 
-      Bitte überweisen Sie den Rechnungsbetrag auf eine unserer unten
-      angeführten Bankverbindungen. Vielen Dank!
-    \end{samepage2}
+    \textbf{Mit der Bezahlung der Rechnung werden diese Bedingungen
+    anerkannt.}
+
+    Bitte überweisen Sie den Rechnungsbetrag auf eine unserer unten
+    angeführten Bankverbindungen. Vielen Dank!
   \end{letter}
 }
