@@ -23,7 +23,8 @@
   fromlogo,                       % Setze Logo im Header
   fromrule=afteraddress,          % Linie unter Header
   enlargefirstpage=on,            % Erste Seite darf vergrößert werden
-  version=last                    % Neueste Komaversion ohne Kompatibilität
+  version=last,                   % Neueste Komaversion ohne Kompatibilität
+  parskip=half-,                  % Neue Absätze ohne Einrückung
 ]{scrlttr2}
 
 % Verwendet den Standard LaTeX2e
@@ -61,10 +62,6 @@
 % Zeilenabstand in Tabellen vergrößern (Standard 1)
 \renewcommand{\arraystretch}{1.25}
 
-% Keine Einrückung bei neuen Absätzen
-\setlength{\parindent}{0pt}
-% Dafür größerer Abstand zwischen den Absätzen
-\setlength{\parskip}{5pt}
 
 % Definiere Umgebung, die keine Seitenumbrüche erlaubt
 \newlength{\currentparindent}
