@@ -22,7 +22,7 @@ fi
 
 rm -rf "$texdir" "$pdfdir" "$builddir" "$mailfile"
 
-tcsrechnung -i "$xmlfile" -o "$texdir" -m "$mailfile" -p "$pdfdir" "$@"
+tcsrechnung -i "$xmlfile" -o "$texdir" -m "$mailfile" "$@"
 
 for i in "$texdir"/*.tex; do
   latexmk -silent -interaction=nonstopmode -pdf -outdir="$builddir" "$i"

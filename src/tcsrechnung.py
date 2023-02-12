@@ -292,7 +292,7 @@ def erstelle_rechnung(rechnung, rechnungsnummer, meta):
     return latex_out
 
 
-def erstelle_mail(rechnung, meta, texfile, folder):
+def erstelle_mail(rechnung, meta, texfile):
     """Erstellt Mailausgabe
 
        @rechnung: xml-tree eines Rechnungelements
@@ -319,8 +319,7 @@ def erstelle_mail(rechnung, meta, texfile, folder):
     if len(kinder) > 1:
         kinder_out += ' und ' + kinder[-1].find('name').text
 
-    texfile = os.path.join(os.getcwd(), folder,
-                           os.path.splitext(os.path.basename(texfile))[0]
+    texfile = os.path.join(os.path.splitext(os.path.basename(texfile))[0]
                            + '.pdf')
 
     return (anrede_out + ';'
@@ -349,8 +348,6 @@ def run():
                         help='Ausgabeordner Rechnungen (tex Format)')
     parser.add_argument('-m', required=True,
                         help='Ausgabedatei Emails (csv Format)')
-    parser.add_argument('-p', required=True,
-                        help='Ausgabeordner Rechnungen (pdf Format)')
     parser.add_argument('--nosingle', action='store_true',
                         help='Erstelle keine einzelnen Rechnungsdateien')
     args = parser.parse_args()
@@ -382,7 +379,7 @@ def run():
                 f_tex.write('\\begin{document}\n')
                 f_tex.write(output)
                 f_tex.write('\\end{document}\n')
-            f_mail.write(erstelle_mail(rechnung, meta, texfile, args.p))
+            f_mail.write(erstelle_mail(rechnung, meta, texfile))
         f_tex_all.write('\\end{document}\n')
 
 
