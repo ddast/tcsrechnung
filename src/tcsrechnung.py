@@ -446,11 +446,7 @@ def erstelle_mail(rechnung, meta, texfile):
     @rechnung: xml-tree eines Rechnungelements
     @meta: Metadaten gültig für alle Rechnungen
     """
-    email = rechnung.find("email")
-    if email is None or email.text is None:
-        return ""
-    email_out = email.text
-
+    email_out = _get_text(rechnung, "email")
     name = _get_text(rechnung, "name")
     anrede = name.split(" ", 1)[0]
     if anrede in ["Familie", "Frau"]:
@@ -525,7 +521,10 @@ def run():
         + str(MONATE_DIC[meta.bis_monat])
         + ".tex",
     )
-    with open(args.m, "w") as f_mail, open(texfile_all, "w") as f_tex_all:
+    filename_nomail = os.path.join(args.o, "rechnungen_nomail.txt")
+    with open(args.m, "w") as f_mail, open(texfile_all, "w") as f_tex_all, open(
+        filename_nomail, "w"
+    ) as f_nomail:
         f_mail.write(get_mail_header())
         f_tex_all.write("\\documentclass{tcsrechnung}\n")
         f_tex_all.write("\\begin{document}\n")
@@ -545,7 +544,14 @@ def run():
                 f_tex.write("\\begin{document}\n")
                 f_tex.write(output)
                 f_tex.write("\\end{document}\n")
-            f_mail.write(erstelle_mail(rechnung, meta, texfile))
+            try:
+                f_mail.write(erstelle_mail(rechnung, meta, texfile))
+            except TCSRechnungError:
+                pdffile = os.path.join(
+                    os.path.splitext(os.path.basename(texfile))[0] + ".pdf"
+                )
+                f_nomail.write(pdffile + "\n")
+
         f_tex_all.write("\\end{document}\n")
 
 
