@@ -1,50 +1,82 @@
 <?xml version="1.0"?>
 <data>
-  <von>Januar</von>
-  <bis>April</bis>
-  <jahr>2014</jahr>
+  <von>Oktober</von>
+  <bis>Dezember</bis>
+  <jahr>2024</jahr>
   <stdkosten60>
-    <p1>40</p1>
-    <p2>42</p2>
-    <p3>42</p3>
-    <p4>44</p4>
-    <p5>45</p5>
+    <p1>48</p1>
+    <p2>52</p2>
+    <p3>54</p3>
+    <p4>56</p4>
+    <p5>60</p5>
   </stdkosten60>
   <stdkosten40>
-    <p1>30</p1>
-    <p2>32</p2>
-    <p3>33</p3>
-    <p4>36</p4>
+    <p1>36</p1>
+    <p2>40</p2>
+    <p3>42</p3>
+    <p4>48</p4>
+    <p5>55</p5>
   </stdkosten40>
-  <beginn_halle>01-10-2013</beginn_halle>
-  <hallenkosten>11</hallenkosten>
-  <rechnungsnummer>0013</rechnungsnummer>
+  <beginn_halle>01-10-2024</beginn_halle>
+  <hallenkosten>14</hallenkosten>
+  <rechnungsnummer>0</rechnungsnummer>
 
   <rechnung>
-    <name>Daisy Duck</name>
-    <strasse>Blumenweg 31</strasse>
-    <ort>123456 Entenhausen</ort>
+    <name>Familie Berger</name>
+    <strasse>Lindenweg 12</strasse>
+    <ort>70173 Stuttgart</ort>
+    <email>thomas.berger82@example.com</email>
     <kind>
-      <name>Tick</name>
+      <name>Leon</name>
       <training>
-        <tag>Mittwoch</tag>
-        <preis>176</preis>
-        <preis>132</preis>
+        <tag>Montag</tag>
+        <preis>224</preis>
+        <preis>168</preis>
         <teilnehmerzahl>4</teilnehmerzahl>
         <dauer>60</dauer>
         <foerderung>ja</foerderung>
         <bezahlt>nein</bezahlt>
+        <halleneinheiten>5</halleneinheiten>
       </training>
-    </kind>
-    <kind>
-      <name>Trick</name>
       <training>
-        <tag>Freitag</tag>
-        <preis>0</preis>
-        <teilnehmerzahl>2</teilnehmerzahl>
+        <tag>Mittwoch</tag>
+        <teilnehmerzahl>4</teilnehmerzahl>
         <dauer>60</dauer>
         <foerderung>nein</foerderung>
         <bezahlt>ja</bezahlt>
+        <halleneinheiten></halleneinheiten>
+      </training>
+    </kind>
+  </rechnung>
+
+  <rechnung>
+    <name>Herr Krüger</name>
+    <strasse>Hauptstraße 45</strasse>
+    <ort>80331 München</ort>
+    <email>sabine.krueger@mailtest.de</email>
+    <kind>
+      <name>Mia</name>
+      <training>
+        <tag>Donnerstag</tag>
+        <preis>192</preis>
+        <preis>240</preis>
+        <preis>192</preis>
+        <teilnehmerzahl>4</teilnehmerzahl>
+        <dauer>40</dauer>
+        <foerderung>ja</foerderung>
+        <bezahlt>nein</bezahlt>
+        <halleneinheiten></halleneinheiten>
+      </training>
+    </kind>
+    <kind>
+      <name>Jonas</name>
+      <training>
+        <tag>Dienstag</tag>
+        <teilnehmerzahl>4</teilnehmerzahl>
+        <dauer>60</dauer>
+        <foerderung>nein</foerderung>
+        <bezahlt>ja</bezahlt>
+        <halleneinheiten></halleneinheiten>
       </training>
     </kind>
   </rechnung>
