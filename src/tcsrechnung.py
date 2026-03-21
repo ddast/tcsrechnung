@@ -27,6 +27,12 @@ import argparse
 MWST_VOLL = 0.19
 MWST_ERM = 0.07
 
+
+class TCSRechnungError(Exception):
+    def __init__(self, message):
+            super().__init__(message)
+
+
 WOCHENTAGE_DIC = {
     'Montag': 0, 'Dienstag': 1, 'Mittwoch': 2,
     'Donnerstag': 3, 'Freitag': 4, 'Samstag': 5, 'Sonntag': 6
@@ -36,6 +42,35 @@ MONATE_DIC = {
     'Juni': 6, 'Juli': 7, 'August': 8, 'September': 9, 'Oktober': 10,
     'November': 11, 'Dezember': 12
     }
+
+
+def _get_all_elems(parent, field_name):
+    elems = parent.findall(field_name)
+    if elems is None:
+        raise TCSRechnungError(f"Element <{field_name}> in Block <{parent.tag}> fehlt")
+    return elems
+
+
+def _get_elem(parent, field_name):
+    elem = parent.find(field_name)
+    if elem is None:
+        raise TCSRechnungError(f"Element <{field_name}> in Block <{parent.tag}> fehlt")
+    return elem
+
+
+def _get_text(parent, field_name):
+    elem = _get_elem(parent, field_name)
+    if elem.text is None:
+        raise TCSRechnungError(f"Element <{field_name}> in Block <{parent.tag}> fehlt oder ist leer")
+    return elem.text
+
+
+def _get_int(parent, field_name):
+    text = _get_text(parent, field_name)
+    try:
+        return int(text)
+    except ValueError:
+        raise TCSRechnungError(f"Element <{field_name}>='{text}' in Block <{parent.tag}> ist keine gültige Zahl")
 
 
 class Metadaten():
@@ -62,17 +97,25 @@ class Metadaten():
 
         @root: Wurzel xml-tree aller Rechnungen
         """
-        self.jahr = int(root.find('jahr').text)
+        self.jahr = _get_int(root, 'jahr')
         self.jahr_cur = datetime.date.today().year
-        self.von_monat = root.find('von').text
-        self.bis_monat = root.find('bis').text
-        self.stdlohn60 = [int(root.find('stdkosten60').find(p).text)
-                          for p in ['p1', 'p2', 'p3', 'p4', 'p5']]
-        self.stdlohn40 = [int(root.find('stdkosten40').find(p).text)
-                          for p in ['p1', 'p2', 'p3', 'p4']]
+        self.von_monat = _get_text(root, 'von')
+        self.bis_monat = _get_text(root, 'bis')
+
+        self.stdlohn60 = []
+        for p in ['p1', 'p2', 'p3', 'p4', 'p5']:
+            elem_stdkosten = _get_elem(root, 'stdkosten60')
+            self.stdlohn60.append(_get_int(elem_stdkosten, p))
+
+        self.stdlohn40 = []
+        for p in ['p1', 'p2', 'p3', 'p4']:
+            elem_stdkosten = _get_elem(root, 'stdkosten40')
+            self.stdlohn40.append(_get_int(elem_stdkosten, p))
+
         self.stdlohn60n = [i / (1.0 + MWST_VOLL) for i in self.stdlohn60]
         self.stdlohn40n = [i / (1.0 + MWST_VOLL) for i in self.stdlohn40]
-        self.stdhalle = int(root.find('hallenkosten').text)
+
+        self.stdhalle = _get_int(root, 'hallenkosten')
         self.stdhalle_netto = self.stdhalle/(1.0+MWST_ERM)
 
         self.hallensaison = False
@@ -85,9 +128,13 @@ class Metadaten():
         bis_datum = datetime.date(
                 self.jahr, MONATE_DIC[self.bis_monat],
                 calendar.monthrange(self.jahr, MONATE_DIC[self.bis_monat])[1])
-        beginn_halle_str = root.find('beginn_halle').text
-        beginn_halle = datetime.datetime.strptime(beginn_halle_str,
-                                                  '%d-%m-%Y').date()
+        beginn_halle_str = _get_text(root, 'beginn_halle')
+        try:
+            beginn_halle = datetime.datetime.strptime(beginn_halle_str,
+                                                      '%d-%m-%Y').date()
+        except ValueError:
+            raise TCSRechnungError(
+                f"<beginn_halle>='{beginn_halle_str}' hat ungültiges Format (erwartet: DD-MM-YYYY)")
         ende_halle = beginn_halle + datetime.timedelta(30*7-1)
         if ((beginn_halle < bis_datum < ende_halle) or
                 (beginn_halle < von_datum < ende_halle)):
@@ -115,12 +162,18 @@ def erstelle_posten(training, meta, nettopreise, bruttopreise):
        @nettopreise: Rückgabeliste für Nettopreise (Cent Genauigkeit)
        @bruttopreise: Rückgabeliste für Bruttopreise (Cent Genauigkeit)
     """
-    dauer = int(training.find('dauer').text)
-    teilnehmerzahl = int(training.find('teilnehmerzahl').text)
+    dauer = _get_int(training, 'dauer')
+    teilnehmerzahl = _get_int(training, 'teilnehmerzahl')
 
     gesamtpreis = 0
-    for preis in training.findall('preis'):
-        gesamtpreis += int(preis.text)
+    for preis in _get_all_elems(training, 'preis'):
+        if preis.text is None:
+            raise TCSRechnungError(f"<{preis.tag}> ist leer")
+        try:
+            gesamtpreis += int(preis.text)
+        except ValueError:
+            raise TCSRechnungError(
+                f"<{preis.tag}>='{preis.text}' ist keine gültige Zahl")
     gesamtpreis_netto = gesamtpreis/(teilnehmerzahl*(1.0+MWST_VOLL))
 
     if dauer == 60:
@@ -130,29 +183,30 @@ def erstelle_posten(training, meta, nettopreise, bruttopreise):
         stdlohn = meta.stdlohn40[teilnehmerzahl-1]
         stdlohn_netto = meta.stdlohn40n[teilnehmerzahl-1]
     else:
-        print('Keine gültige Trainingsdauer angegeben', file=sys.stderr)
-        return 0
+        raise TCSRechnungError(f"Ungültige Trainingsdauer={dauer}")
 
-    if gesamtpreis % stdlohn == 0:
-        einheiten = int(gesamtpreis/stdlohn)
-    else:
-        print('Gesamtpreis ist kein Vielfaches des Stundenlohns',
-              file=sys.stderr)
+    if gesamtpreis % stdlohn != 0:
+        raise TCSRechnungError(
+            f"Gesamtpreis={gesamtpreis} ist kein Vielfaches von stdlohn={stdlohn}")
+    einheiten = int(gesamtpreis/stdlohn)
 
-    if training.find('foerderung').text == 'ja':
+    is_foerderung = _get_text(training, 'foerderung')
+    if is_foerderung == 'ja':
         foerderung = gesamtpreis_netto
         zahlbetrag = 0.
         zahlbetrag_brutto = 0.
-    else:
+    elif is_foerderung == 'nein':
         foerderung = 0.
         zahlbetrag = gesamtpreis_netto
         zahlbetrag_brutto = gesamtpreis/teilnehmerzahl
+    else:
+        raise TCSRechnungError(f"Ungültiger Eintrag <foerderung>={is_foerderung}.  Erlaubte Werte sind 'ja' und 'nein'.")
 
     nettopreise.append(round(zahlbetrag, 2))
     bruttopreise.append(round(zahlbetrag_brutto, 2))
 
     posten = ('\\Posten{' +
-              training.find('tag').text + '}{' +
+              _get_text(training, 'tag') + '}{' +
               str(einheiten) + '}{' +
               '{:.2f}'.format(stdlohn_netto*60/dauer).replace('.', ',') +
               '}{' + str(teilnehmerzahl) + '}{'
@@ -171,18 +225,17 @@ def erstelle_hallenposten(training, meta, nettopreise, bruttopreise):
        @nettopreise: Rückgabeliste für Nettopreise (Cent Genauigkeit)
        @bruttopreise: Rückgabeliste für Bruttopreise (Cent Genauigkeit)
     """
-    wochentag = training.find('tag').text
+    wochentag = _get_text(training, 'tag')
 
     einheiten = 0
     halleneinheiten = training.find('halleneinheiten')
     if halleneinheiten is None or halleneinheiten.text is None:
         einheiten = meta.wochentage_cnt[WOCHENTAGE_DIC[wochentag]]
     else:
-        einheiten = int(halleneinheiten.text)
+        einheiten = _get_int(training, 'halleneinheiten')
 
-    teilnehmerzahl = int(training.find('teilnehmerzahl').text)
-
-    dauer = int(training.find('dauer').text)
+    teilnehmerzahl = _get_int(training, 'teilnehmerzahl')
+    dauer = _get_int(training, 'dauer')
 
     gesamtpreis_netto = einheiten*meta.stdhalle_netto*dauer/(60*teilnehmerzahl)
 
@@ -205,51 +258,64 @@ def erstelle_hallenposten(training, meta, nettopreise, bruttopreise):
 def erstelle_rechnung(rechnung, rechnungsnummer, meta):
     """Erstellt eine Rechnung.
 
-       @rechnung: xml-tree eines Rechnungelements
+       @rechnung: xml-tree eines Rechnungselements
        @rechnungsnummer: fortlaufende Rechnungsnummer
        @meta: Metadaten gültig für alle Rechnungen
     """
-    latex_out = ('\\Empfaenger{' + rechnung.find('name').text + '}{'
-                 + rechnung.find('strasse').text + '}{'
-                 + rechnung.find('ort').text + '}\n')
+    rechnung_name = _get_text(rechnung, 'name')
+    try:
+        latex_out = ('\\Empfaenger{' + rechnung_name + '}{'
+                     + _get_text(rechnung, 'strasse') + '}{'
+                     + _get_text(rechnung, 'ort') + '}\n')
 
-    kinder = ''
-    kindercnt = 0
+        kinder = ''
+        kindercnt = 0
 
-    for kind in rechnung.findall('kind'):
-        kindercnt += 1
-        if kindercnt > 1:
-            kinder += ', '
-        kinder += kind.find('name').text
+        for kind in _get_all_elems(rechnung, 'kind'):
+            kindercnt += 1
+            if kindercnt > 1:
+                kinder += ', '
+            kinder += _get_text(kind, 'name')
 
-    latex_out += ('\\Referenz{' + str(meta.jahr_cur-2000)
-                  + '/{:04d}'.format(rechnungsnummer)
-                  + '}{' + meta.von_monat
-                  + '}{' + meta.bis_monat + ' ' + str(meta.jahr)
-                  + '}{' + kinder + '}\n')
+        latex_out += ('\\Referenz{' + str(meta.jahr_cur-2000)
+                      + '/{:04d}'.format(rechnungsnummer)
+                      + '}{' + meta.von_monat
+                      + '}{' + meta.bis_monat + ' ' + str(meta.jahr)
+                      + '}{' + kinder + '}\n')
+    except TCSRechnungError as e:
+        raise TCSRechnungError(f"Fehler in Rechnung für '{rechnung_name}'"
+                               f": {str(e)}")
+
 
     nettopreise16 = []
     bruttopreise16 = []
     nettopreise7 = []
     bruttopreise7 = []
 
-    for kind in rechnung.findall('kind'):
+    for kind in _get_all_elems(rechnung, 'kind'):
+        kind_name = _get_text(kind, 'name')
         posten_training = []
         posten_halle = []
-        for training in kind.findall('training'):
-            if training.find('bezahlt').text != 'ja':
-                posten_training.append(erstelle_posten(training, meta,
-                                                       nettopreise16,
-                                                       bruttopreise16))
-            posten_halle.append(erstelle_hallenposten(training, meta,
-                                                      nettopreise7,
-                                                      bruttopreise7))
+        try:
+            for training in _get_all_elems(kind, 'training'):
+                is_bezahlt = _get_text(training, 'bezahlt')
+                if is_bezahlt == 'nein':
+                    posten_training.append(erstelle_posten(training, meta,
+                                                           nettopreise16,
+                                                           bruttopreise16))
+                elif is_bezahlt != 'ja':
+                    raise TCSRechnungError(f"Ungültiger Eintrag <bezahlt>={is_bezahlt}.  Erlaubte Werte sind 'ja' und 'nein'.")
 
-        name = kind.find('name').text
+                posten_halle.append(erstelle_hallenposten(training, meta,
+                                                          nettopreise7,
+                                                          bruttopreise7))
+        except TCSRechnungError as e:
+            raise TCSRechnungError(f"Fehler in Rechnung für '{rechnung_name}',"
+                                   f" Kind '{kind_name}': {str(e)}")
 
         if posten_training:
             if kindercnt > 1:
-                latex_out += '\\Kostentyp{Trainingskosten (' + name + ')}\n'
+                latex_out += '\\Kostentyp{Trainingskosten (' + kind_name + ')}\n'
             else:
                 latex_out += '\\Kostentyp{Trainingskosten}\n'
             for posten in posten_training:
@@ -257,7 +323,7 @@ def erstelle_rechnung(rechnung, rechnungsnummer, meta):
 
         if meta.hallensaison:
             if kindercnt > 1:
-                latex_out += '\\Kostentyp{Hallenkosten (' + name + ')}\n'
+                latex_out += '\\Kostentyp{Hallenkosten (' + kind_name + ')}\n'
             else:
                 latex_out += '\\Kostentyp{Hallenkosten}\n'
             for posten in posten_halle:
@@ -303,23 +369,23 @@ def erstelle_mail(rechnung, meta, texfile):
         return ''
     email_out = email.text
 
-    name = rechnung.find('name').text
+    name = _get_text(rechnung, 'name')
     anrede = name.split(' ', 1)[0]
     if anrede in ['Familie', 'Frau']:
         anrede_out = 'Liebe ' + name
-    elif anrede == 'Herrn':
+    elif anrede == 'Herr':
         anrede_out = 'Lieber Herr ' + name.split(' ', 1)[1]
     else:
         anrede_out = 'Liebe/r ' + name
 
-    kinder = rechnung.findall('kind')
-    kinder_out = kinder[0].find('name').text
+    kinder = _get_all_elems(rechnung, 'kind')
+    kinder_out = _get_text(kinder[0], 'name')
     for kind in kinder[1:-1]:
-        kinder_out += ', ' + kind.find('name').text
+        kinder_out += ', ' + _get_text(kind, 'name')
     if len(kinder) > 1:
-        kinder_out += ' und ' + kinder[-1].find('name').text
+        kinder_out += ' und ' + _get_text(kinder[-1], 'name')
 
-    texfile = os.path.join(os.path.splitext(os.path.basename(texfile))[0]
+    pdffile = os.path.join(os.path.splitext(os.path.basename(texfile))[0]
                            + '.pdf')
 
     return (anrede_out + ';'
@@ -328,7 +394,7 @@ def erstelle_mail(rechnung, meta, texfile):
             + meta.von_monat + ';'
             + meta.bis_monat + ';'
             + str(meta.jahr) + ';'
-            + texfile + '\n')
+            + pdffile + '\n')
 
 
 def get_mail_header():
@@ -365,8 +431,8 @@ def run():
         f_mail.write(get_mail_header())
         f_tex_all.write('\\documentclass{tcsrechnung}\n')
         f_tex_all.write('\\begin{document}\n')
-        rechnungsnr = int(root.find('rechnungsnummer').text)
-        for rechnung in root.findall('rechnung'):
+        rechnungsnr = _get_int(root, 'rechnungsnummer')
+        for rechnung in _get_all_elems(root, 'rechnung'):
             rechnungsnr += 1
             output = erstelle_rechnung(rechnung, rechnungsnr, meta)
             f_tex_all.write(output)
@@ -384,4 +450,11 @@ def run():
 
 
 if __name__ == '__main__':
-    run()
+    try:
+        run()
+    except TCSRechnungError as e:
+        print(e, file=sys.stderr)
+        sys.exit(1)
+    except ET.ParseError as e:
+        print("Fehlerhaftes Format der XML Datei: " + str(e), file=sys.stderr)
+        sys.exit(1)
