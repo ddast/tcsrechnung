@@ -1,3 +1,2 @@
 *.swp
-setaddress.sh
-res/
+__pycache__
