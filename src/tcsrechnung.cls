@@ -121,19 +121,14 @@
 \ifoot{\\[13.0mm]\usekomavar{frombank}}
 \ofoot{\\[13.0mm]\usekomavar{fromtaxes}}
 
-% Rücksendeadresse
-\setkomavar{backaddress}{Donald Duck\\
-                         Blumenweg 13\\
-                         123456 Entenhausen}
-
-% Kontakt
-\setkomavar{location}{\raggedleft%
-  \sffamily\scriptsize
-  \textbf{Kontakt}\\
-  Donald Duck\\
-  Tel.: 0123\,4567890\\
-  Mobil: 0987\,6543210\\
-  donald@duck.de%
+% Lese persönliche Daten aus externer Datei
+\IfFileExists{personal-config.tex}{
+  \input{personal-config.tex}
+}{
+\PackageError{tcsrechnung}{Konfigurationsdatei personal-config.tex nicht
+  gefunden.  Kopiere personal-config.template.tex nach personal-config.tex und
+  ergänze die korrekten Daten}{Erstelle Datei personal-config.tex im Format
+  von personal-config.template.tex}
 }
 
 % Ort und Datum
