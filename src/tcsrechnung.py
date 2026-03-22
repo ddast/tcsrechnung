@@ -29,7 +29,7 @@ MWST_ERM = 0.07
 
 
 class TCSRechnungError(Exception):
-    def __init__(self, message):
+    def __init__(self, message: str):
         super().__init__(message)
 
 
@@ -58,21 +58,21 @@ MONATE_DIC = {
 }
 
 
-def _get_all_elems(parent, field_name):
+def _get_all_elems(parent: ET.Element, field_name: str) -> list[ET.Element]:
     elems = parent.findall(field_name)
     if elems is None:
         raise TCSRechnungError(f"Element <{field_name}> in Block <{parent.tag}> fehlt")
     return elems
 
 
-def _get_elem(parent, field_name):
+def _get_elem(parent: ET.Element, field_name: str) -> ET.Element:
     elem = parent.find(field_name)
     if elem is None:
         raise TCSRechnungError(f"Element <{field_name}> in Block <{parent.tag}> fehlt")
     return elem
 
 
-def _get_text(parent, field_name):
+def _get_text(parent: ET.Element, field_name: str) -> str:
     elem = _get_elem(parent, field_name)
     if elem.text is None:
         raise TCSRechnungError(
@@ -81,7 +81,7 @@ def _get_text(parent, field_name):
     return elem.text
 
 
-def _get_int(parent, field_name):
+def _get_int(parent: ET.Element, field_name: str) -> int:
     text = _get_text(parent, field_name)
     try:
         return int(text)
@@ -93,29 +93,7 @@ def _get_int(parent, field_name):
 
 
 class Metadaten:
-    """Für gesamte Rechungsstellung gültige Metadaten.
-
-    Attribute:
-        jahr: Jahr der Rechnung
-        jahr_cur: Jahr in dem Rechnung verschickt wird
-        von_monat: Erster Monat
-        bis_monat: Letzer Monat
-        stdlohn60: Bruttostundenlohn für 60 Minuten
-        stdlohn40: Bruttostundenlohn für 40 Minuten
-        stdlohn60n: Nettostundenlohn für 60 Minuten
-        stdlohn40n: Nettostundenlohn für 40 Minuten
-        hallensaison: Ist im Zeitraum Hallensaison?
-        stdhalle: Bruttohallenkosten für eine Stunde
-        stdhalle_netto: Nettohallenkosten für eine Stunde
-        wochentage_cnt: Wochentage in der Schnittmenge Hallensaison und
-                        Rechnungszeitraum
-    """
-
-    def __init__(self, root):
-        """Initialisiere verwendete Variablen.
-
-        @root: Wurzel xml-tree aller Rechnungen
-        """
+    def __init__(self, root: ET.Element) -> None:
         self.jahr = _get_int(root, "jahr")
         self.jahr_cur = datetime.date.today().year
         self.von_monat = _get_text(root, "von")
@@ -141,8 +119,7 @@ class Metadaten:
         self.wochentage_cnt = [0] * 7
         self._init_hallensaison(root)
 
-    def _init_hallensaison(self, root):
-        """Initialisiert self.hallensaison und self.wochentage_cnt."""
+    def _init_hallensaison(self, root: ET.Element) -> None:
         von_datum = datetime.date(self.jahr, MONATE_DIC[self.von_monat], 1)
         bis_datum = datetime.date(
             self.jahr,
@@ -179,14 +156,12 @@ class Metadaten:
             self.wochentage_cnt[cur_datum.weekday()] = cnt
 
 
-def erstelle_posten(training, meta, nettopreise, bruttopreise):
-    """Erzeugt Posten aus einem Trainingsblock.
-
-    @training: xml-tree eines Trainingselements
-    @meta: Metadaten gültig für alle Rechnungen
-    @nettopreise: Rückgabeliste für Nettopreise (Cent Genauigkeit)
-    @bruttopreise: Rückgabeliste für Bruttopreise (Cent Genauigkeit)
-    """
+def erstelle_posten(
+    training: ET.Element,
+    meta: Metadaten,
+    nettopreise: list[float],
+    bruttopreise: list[float],
+) -> str:
     dauer = _get_int(training, "dauer")
     teilnehmerzahl = _get_int(training, "teilnehmerzahl")
 
@@ -257,14 +232,12 @@ def erstelle_posten(training, meta, nettopreise, bruttopreise):
     return posten
 
 
-def erstelle_hallenposten(training, meta, nettopreise, bruttopreise):
-    """Erzeugt Hallenposten aus einem Trainingsblock.
-
-    @training: xml-tree eines Trainingselements
-    @meta: Metadaten gültig für alle Rechnungen
-    @nettopreise: Rückgabeliste für Nettopreise (Cent Genauigkeit)
-    @bruttopreise: Rückgabeliste für Bruttopreise (Cent Genauigkeit)
-    """
+def erstelle_hallenposten(
+    training: ET.Element,
+    meta: Metadaten,
+    nettopreise: list[float],
+    bruttopreise: list[float],
+) -> str:
     wochentag = _get_text(training, "tag")
 
     einheiten = 0
@@ -306,13 +279,9 @@ def erstelle_hallenposten(training, meta, nettopreise, bruttopreise):
     return posten
 
 
-def erstelle_rechnung(rechnung, rechnungsnummer, meta):
-    """Erstellt eine Rechnung.
-
-    @rechnung: xml-tree eines Rechnungselements
-    @rechnungsnummer: fortlaufende Rechnungsnummer
-    @meta: Metadaten gültig für alle Rechnungen
-    """
+def erstelle_rechnung(
+    rechnung: ET.Element, rechnungsnummer: int, meta: Metadaten
+) -> str:
     rechnung_name = _get_text(rechnung, "name")
     try:
         latex_out = (
@@ -351,10 +320,10 @@ def erstelle_rechnung(rechnung, rechnungsnummer, meta):
     except TCSRechnungError as e:
         raise TCSRechnungError(f"Fehler in Rechnung für '{rechnung_name}': {str(e)}")
 
-    nettopreise16 = []
-    bruttopreise16 = []
-    nettopreise7 = []
-    bruttopreise7 = []
+    nettopreise16: list[float] = []
+    bruttopreise16: list[float] = []
+    nettopreise7: list[float] = []
+    bruttopreise7: list[float] = []
 
     for kind in _get_all_elems(rechnung, "kind"):
         kind_name = _get_text(kind, "name")
@@ -440,12 +409,7 @@ def erstelle_rechnung(rechnung, rechnungsnummer, meta):
     return latex_out
 
 
-def erstelle_mail(rechnung, meta, texfile):
-    """Erstellt Mailausgabe
-
-    @rechnung: xml-tree eines Rechnungelements
-    @meta: Metadaten gültig für alle Rechnungen
-    """
+def erstelle_mail(rechnung: ET.Element, meta: Metadaten, texfile: str) -> str:
     email_out = _get_text(rechnung, "email")
     name = _get_text(rechnung, "name")
     anrede = name.split(" ", 1)[0]
@@ -483,13 +447,11 @@ def erstelle_mail(rechnung, meta, texfile):
     )
 
 
-def get_mail_header():
-    """Gibt den Header der csv Datei für die Mails zurück"""
+def get_mail_header() -> str:
     return "Anrede;Email;Kinder;Von_Monat;Bis_Monat;Jahr;Anhang\n"
 
 
-def run():
-    """Beginne Auswertung der xml-Datei und starte Rechnungserstellung"""
+def run() -> None:
     parser = argparse.ArgumentParser(
         prog="tcsrechnung", description="Erstelle LaTeX Datei für TCS Rechnungen"
     )

@@ -44,47 +44,38 @@ from tcsrechnung import (
 
 
 class TestHelperFunctions:
-    """Tests for XML helper functions."""
-
     def test_get_elem_success(self):
-        """Test _get_elem with existing element."""
         parent = ET.fromstring("<root><child>text</child></root>")
         elem = _get_elem(parent, "child")
         assert elem.text == "text"
 
     def test_get_elem_missing(self):
-        """Test _get_elem raises error for missing element."""
         parent = ET.fromstring("<root></root>")
         with pytest.raises(TCSRechnungError) as exc_info:
             _get_elem(parent, "missing")
         assert "Element <missing> in Block <root> fehlt" in str(exc_info.value)
 
     def test_get_text_success(self):
-        """Test _get_text with valid text."""
         parent = ET.fromstring("<root><name>Test</name></root>")
         assert _get_text(parent, "name") == "Test"
 
     def test_get_text_empty(self):
-        """Test _get_text raises error for empty element."""
         parent = ET.fromstring("<root><name></name></root>")
         with pytest.raises(TCSRechnungError) as exc_info:
             _get_text(parent, "name")
         assert "fehlt oder ist leer" in str(exc_info.value)
 
     def test_get_int_success(self):
-        """Test _get_int with valid integer."""
         parent = ET.fromstring("<root><count>42</count></root>")
         assert _get_int(parent, "count") == 42
 
     def test_get_int_invalid(self):
-        """Test _get_int raises error for non-integer."""
         parent = ET.fromstring("<root><count>abc</count></root>")
         with pytest.raises(TCSRechnungError) as exc_info:
             _get_int(parent, "count")
         assert "ist keine gültige Zahl" in str(exc_info.value)
 
     def test_get_all_elems_success(self):
-        """Test _get_all_elems returns all matching elements."""
         parent = ET.fromstring("<root><item>1</item><item>2</item></root>")
         elems = _get_all_elems(parent, "item")
         assert len(elems) == 2
@@ -92,25 +83,21 @@ class TestHelperFunctions:
         assert elems[1].text == "2"
 
     def test_get_all_elems_empty(self):
-        """Test _get_all_elems returns empty list for no matches."""
         parent = ET.fromstring("<root></root>")
         elems = _get_all_elems(parent, "item")
         assert elems == []
 
 
 class TestMetadaten:
-    """Tests for Metadaten class."""
-
     def create_metadata_xml(
         self,
-        jahr=2024,
-        von="Oktober",
-        bis="Dezember",
-        beginn_halle="01-10-2024",
-        hallenkosten=14,
-        rechnungsnummer=0,
-    ):
-        """Create a sample XML root for Metadaten testing."""
+        jahr: int = 2024,
+        von: str = "Oktober",
+        bis: str = "Dezember",
+        beginn_halle: str = "01-10-2024",
+        hallenkosten: int = 14,
+        rechnungsnummer: int = 0,
+    ) -> ET.Element:
         return ET.fromstring(f"""<data>
             <von>{von}</von>
             <bis>{bis}</bis>
@@ -135,7 +122,6 @@ class TestMetadaten:
         </data>""")
 
     def test_basic_initialization(self):
-        """Test basic Metadaten initialization."""
         root = self.create_metadata_xml()
         meta = Metadaten(root)
 
@@ -154,8 +140,6 @@ class TestMetadaten:
         assert meta.stdhalle_netto == 14 / (1 + MWST_ERM)
 
     def test_hallensaison_winter_detected(self, capsys):
-        """Test hallensaison detection for winter period."""
-        # Billing period overlaps with hall season (Oct-Dec)
         root = self.create_metadata_xml(
             von="Oktober", bis="Dezember", beginn_halle="01-10-2024"
         )
@@ -166,8 +150,6 @@ class TestMetadaten:
         assert meta.hallensaison is True
 
     def test_hallensaison_summer_no_halle(self, capsys):
-        """Test hallensaison detection for summer period."""
-        # Billing period in summer (Apr-Jun), no overlap with hall season
         root = self.create_metadata_xml(
             von="April", bis="Juni", jahr=2024, beginn_halle="01-10-2024"
         )
@@ -178,7 +160,6 @@ class TestMetadaten:
         assert meta.hallensaison is False
 
     def test_invalid_beginn_halle_format(self):
-        """Test error handling for invalid date format."""
         root = self.create_metadata_xml(beginn_halle="invalid-date")
         with pytest.raises(TCSRechnungError) as exc_info:
             Metadaten(root)
@@ -186,18 +167,15 @@ class TestMetadaten:
 
 
 class TestErstellePosten:
-    """Tests for erstelle_posten function (training items)."""
-
     def create_training_xml(
         self,
-        tag="Montag",
-        preise=None,
-        teilnehmerzahl=4,
-        dauer=60,
-        foerderung="nein",
-        bezahlt="nein",
-    ):
-        """Create a sample training XML element."""
+        tag: str = "Montag",
+        preise: list[int] | None = None,
+        teilnehmerzahl: int = 4,
+        dauer: int = 60,
+        foerderung: str = "nein",
+        bezahlt: str = "nein",
+    ) -> ET.Element:
         if preise is None:
             preise = [224]
 
@@ -211,8 +189,7 @@ class TestErstellePosten:
             <bezahlt>{bezahlt}</bezahlt>
         </training>""")
 
-    def create_metadata(self):
-        """Create a sample Metadaten object for testing."""
+    def create_metadata(self) -> Metadaten:
         root = ET.fromstring("""<data>
             <von>Oktober</von>
             <bis>Dezember</bis>
@@ -238,11 +215,10 @@ class TestErstellePosten:
         return Metadaten(root)
 
     def test_posten_60min_4teilnehmer_no_foerderung(self):
-        """Test training posten: 60min, 4 participants, no förderung."""
         meta = self.create_metadata()
         training = self.create_training_xml(
             tag="Montag",
-            preise=[224],  # 4 hours * 56 (p4 rate for 60min)
+            preise=[224],
             teilnehmerzahl=4,
             dauer=60,
             foerderung="nein",
@@ -255,10 +231,6 @@ class TestErstellePosten:
         assert "\\Posten{Montag}{4}{" in result
         assert "}{4}{60}{" in result
 
-        # gesamtpreis = 224, teilnehmerzahl = 4
-        # gesamtpreis_netto = 224 / (4 * 1.19) = 47.058823...
-        # zahlbetrag = gesamtpreis_netto (no förderung)
-        # zahlbetrag_brutto = 224 / 4 = 56
         expected_netto = round(224 / (4 * (1 + MWST_VOLL)), 2)
         expected_brutto = round(224 / 4, 2)
 
@@ -266,11 +238,10 @@ class TestErstellePosten:
         assert bruttopreise == [expected_brutto]
 
     def test_posten_40min_3teilnehmer_with_foerderung(self):
-        """Test training posten: 40min, 3 participants, with förderung."""
         meta = self.create_metadata()
         training = self.create_training_xml(
             tag="Dienstag",
-            preise=[126],  # 3 hours * 42 (p3 rate for 40min)
+            preise=[126],
             teilnehmerzahl=3,
             dauer=40,
             foerderung="ja",
@@ -283,17 +254,14 @@ class TestErstellePosten:
         assert "\\Posten{Dienstag}{3}{" in result
         assert "}{3}{40}{" in result
 
-        # With förderung: zahlbetrag = 0, foerderung = gesamtpreis_netto
         assert nettopreise == [0.0]
         assert bruttopreise == [0.0]
 
     def test_posten_multiple_preise(self):
-        """Test training posten with multiple price entries."""
         meta = self.create_metadata()
-        # Total = 312 = 6 * 52 (p2 rate for 60min with 2 participants)
         training = self.create_training_xml(
             tag="Mittwoch",
-            preise=[100, 200, 12],  # Total = 312
+            preise=[100, 200, 12],
             teilnehmerzahl=2,
             dauer=60,
             foerderung="nein",
@@ -303,14 +271,13 @@ class TestErstellePosten:
         bruttopreise = []
         result = erstelle_posten(training, meta, nettopreise, bruttopreise)
 
-        assert "\\Posten{Mittwoch}{6}{" in result  # 312 / 52 = 6 units
+        assert "\\Posten{Mittwoch}{6}{" in result
         expected_netto = round(312 / (2 * (1 + MWST_VOLL)), 2)
         expected_brutto = round(312 / 2, 2)
         assert nettopreise == [expected_netto]
         assert bruttopreise == [expected_brutto]
 
     def test_posten_invalid_dauer(self):
-        """Test error handling for invalid training duration."""
         meta = self.create_metadata()
         training = self.create_training_xml(dauer=90)
 
@@ -319,7 +286,6 @@ class TestErstellePosten:
         assert "Ungültige Trainingsdauer" in str(exc_info.value)
 
     def test_posten_invalid_foerderung(self):
-        """Test error handling for invalid foerderung value."""
         meta = self.create_metadata()
         training = self.create_training_xml(foerderung="invalid")
 
@@ -328,10 +294,9 @@ class TestErstellePosten:
         assert "Ungültiger Eintrag <foerderung>" in str(exc_info.value)
 
     def test_posten_price_not_multiple(self):
-        """Test error when price is not multiple of stdlohn."""
         meta = self.create_metadata()
         training = self.create_training_xml(
-            preise=[100],  # 100 is not divisible by 56 (p4 rate for 60min)
+            preise=[100],
             teilnehmerzahl=4,
             dauer=60,
         )
@@ -342,16 +307,13 @@ class TestErstellePosten:
 
 
 class TestErstelleHallenposten:
-    """Tests for erstelle_hallenposten function (hall items)."""
-
     def create_training_xml(
         self,
-        tag="Montag",
-        teilnehmerzahl=4,
-        dauer=60,
-        halleneinheiten=None,
-    ):
-        """Create a sample training XML element for hall testing."""
+        tag: str = "Montag",
+        teilnehmerzahl: int = 4,
+        dauer: int = 60,
+        halleneinheiten: int | None = None,
+    ) -> ET.Element:
         halleneinheiten_xml = ""
         if halleneinheiten is not None:
             halleneinheiten_xml = (
@@ -368,10 +330,11 @@ class TestErstelleHallenposten:
             {halleneinheiten_xml}
         </training>""")
 
-    def create_metadata_with_wochentage(self, wochentage_cnt=None):
-        """Create a sample Metadaten object with specific weekday counts."""
+    def create_metadata_with_wochentage(
+        self, wochentage_cnt: list[int] | None = None
+    ) -> Metadaten:
         if wochentage_cnt is None:
-            wochentage_cnt = [10, 10, 10, 10, 10, 10, 10]  # 10 weeks for each day
+            wochentage_cnt = [10, 10, 10, 10, 10, 10, 10]
 
         root = ET.fromstring("""<data>
             <von>Oktober</von>
@@ -401,8 +364,6 @@ class TestErstelleHallenposten:
         return meta
 
     def test_hallenposten_auto_calculated_units(self):
-        """Test hall posten with auto-calculated units."""
-        # Monday (index 0) has 10 units
         meta = self.create_metadata_with_wochentage([10, 10, 10, 10, 10, 10, 10])
         training = self.create_training_xml(tag="Montag", teilnehmerzahl=4, dauer=60)
 
@@ -412,8 +373,6 @@ class TestErstelleHallenposten:
 
         assert "\\Posten{Montag}{10}{" in result
 
-        # einheiten = 10, stdhalle_netto = 14/1.07, dauer = 60, teilnehmerzahl = 4
-        # gesamtpreis_netto = 10 * (14/1.07) * 60 / (60 * 4) = 10 * 13.0841 / 4 = 32.71
         expected_netto = round(10 * (14 / (1 + MWST_ERM)) * 60 / (60 * 4), 2)
         expected_brutto = round(10 * 14 * 60 / (60 * 4), 2)
 
@@ -421,7 +380,6 @@ class TestErstelleHallenposten:
         assert bruttopreise == [expected_brutto]
 
     def test_hallenposten_manual_override(self):
-        """Test hall posten with manual halleneinheiten override."""
         meta = self.create_metadata_with_wochentage([10, 10, 10, 10, 10, 10, 10])
         training = self.create_training_xml(
             tag="Montag", teilnehmerzahl=4, dauer=60, halleneinheiten=5
@@ -431,11 +389,9 @@ class TestErstelleHallenposten:
         bruttopreise = []
         result = erstelle_hallenposten(training, meta, nettopreise, bruttopreise)
 
-        # Should use manual value 5, not auto-calculated 10
         assert "\\Posten{Montag}{5}{" in result
 
     def test_hallenposten_40min_duration(self):
-        """Test hall posten with 40-minute duration."""
         meta = self.create_metadata_with_wochentage([10, 10, 10, 10, 10, 10, 10])
         training = self.create_training_xml(tag="Dienstag", teilnehmerzahl=2, dauer=40)
 
@@ -446,16 +402,14 @@ class TestErstelleHallenposten:
         assert "\\Posten{Dienstag}{10}{" in result
         assert "}{2}{40}{" in result
 
-        # 10 * (14/1.07) * 40 / (60 * 2) = 43.61
         expected_netto = round(10 * (14 / (1 + MWST_ERM)) * 40 / (60 * 2), 2)
         assert nettopreise == [expected_netto]
 
 
 class TestErstelleRechnung:
-    """Tests for erstelle_rechnung function."""
-
-    def create_rechnung_xml(self, name="Familie Test", kinder_data=None):
-        """Create a sample rechnung XML element."""
+    def create_rechnung_xml(
+        self, name: str = "Familie Test", kinder_data: list[dict] | None = None
+    ) -> ET.Element:
         if kinder_data is None:
             kinder_data = [
                 {
@@ -510,8 +464,7 @@ class TestErstelleRechnung:
             {kinder_xml}
         </rechnung>""")
 
-    def create_metadata(self):
-        """Create a sample Metadaten object."""
+    def create_metadata(self) -> Metadaten:
         root = ET.fromstring("""<data>
             <von>Oktober</von>
             <bis>Dezember</bis>
@@ -537,7 +490,6 @@ class TestErstelleRechnung:
         return Metadaten(root)
 
     def test_single_kind_single_training(self):
-        """Test rechnung with single child and single training."""
         meta = self.create_metadata()
         rechnung = self.create_rechnung_xml()
 
@@ -551,7 +503,6 @@ class TestErstelleRechnung:
         assert "\\Schluss{Oktober}{Dezember" in result
 
     def test_multiple_kinder(self):
-        """Test rechnung with multiple children."""
         meta = self.create_metadata()
         kinder_data = [
             {
@@ -594,7 +545,6 @@ class TestErstelleRechnung:
         assert "Hallenkosten (Lisa)}" in result
 
     def test_bezahlt_skips_training(self):
-        """Test that bezahlt='ja' skips the training in output."""
         meta = self.create_metadata()
         kinder_data = [
             {
@@ -649,12 +599,12 @@ class TestErstelleRechnung:
 
 
 class TestErstelleMail:
-    """Tests for erstelle_mail function."""
-
     def create_rechnung_xml(
-        self, name="Familie Test", email="test@example.com", kinder=None
-    ):
-        """Create a sample rechnung XML element."""
+        self,
+        name: str = "Familie Test",
+        email: str = "test@example.com",
+        kinder: list[str] | None = None,
+    ) -> ET.Element:
         if kinder is None:
             kinder = ["Max"]
 
@@ -666,8 +616,7 @@ class TestErstelleMail:
             {kinder_xml}
         </rechnung>""")
 
-    def create_metadata(self):
-        """Create a sample Metadaten object."""
+    def create_metadata(self) -> Metadaten:
         root = ET.fromstring("""<data>
             <von>Oktober</von>
             <bis>Dezember</bis>
@@ -693,7 +642,6 @@ class TestErstelleMail:
         return Metadaten(root)
 
     def test_mail_familie(self):
-        """Test mail generation for 'Familie' salutation."""
         meta = self.create_metadata()
         rechnung = self.create_rechnung_xml(name="Familie Müller", kinder=["Max"])
 
@@ -706,7 +654,6 @@ class TestErstelleMail:
         )
 
     def test_mail_frau(self):
-        """Test mail generation for 'Frau' salutation."""
         meta = self.create_metadata()
         rechnung = self.create_rechnung_xml(name="Frau Schmidt", kinder=["Lisa"])
 
@@ -719,7 +666,6 @@ class TestErstelleMail:
         )
 
     def test_mail_herr(self):
-        """Test mail generation for 'Herr' salutation."""
         meta = self.create_metadata()
         rechnung = self.create_rechnung_xml(name="Herr Meyer", kinder=["Tom"])
 
@@ -732,7 +678,6 @@ class TestErstelleMail:
         )
 
     def test_mail_other(self):
-        """Test mail generation for other salutations."""
         meta = self.create_metadata()
         rechnung = self.create_rechnung_xml(name="Dr. Test", kinder=["Anna"])
 
@@ -745,7 +690,6 @@ class TestErstelleMail:
         )
 
     def test_mail_multiple_kinder(self):
-        """Test mail generation with multiple children."""
         meta = self.create_metadata()
         rechnung = self.create_rechnung_xml(
             name="Familie Test", kinder=["Max", "Lisa", "Tom"]
@@ -760,7 +704,6 @@ class TestErstelleMail:
         )
 
     def test_mail_two_kinder(self):
-        """Test mail generation with exactly two children."""
         meta = self.create_metadata()
         rechnung = self.create_rechnung_xml(name="Familie Test", kinder=["Max", "Lisa"])
 
@@ -774,10 +717,7 @@ class TestErstelleMail:
 
 
 class TestIntegration:
-    """Integration tests using actual XML files."""
-
     def test_actual_rechnungen_xml(self):
-        """Test processing of the actual rechnungen.xml file."""
         xml_path = Path(__file__).parent / "rechnungen.xml"
 
         if not xml_path.exists():
@@ -800,10 +740,7 @@ class TestIntegration:
 
 
 class TestMailHeader:
-    """Tests for get_mail_header function."""
-
     def test_mail_header(self):
-        """Test mail header format."""
         result = get_mail_header()
         assert result == "Anrede;Email;Kinder;Von_Monat;Bis_Monat;Jahr;Anhang\n"
 
