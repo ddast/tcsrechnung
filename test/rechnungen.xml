@@ -29,22 +29,25 @@
     <kind>
       <name>Leon</name>
       <training>
-        <tag>Montag</tag>
-        <preis>224</preis>
-        <preis>168</preis>
-        <teilnehmerzahl>4</teilnehmerzahl>
-        <dauer>60</dauer>
+        <tag>Dienstag</tag>
         <foerderung>ja</foerderung>
-        <bezahlt>nein</bezahlt>
-        <halleneinheiten>5</halleneinheiten>
+        <foerderbetrag_gruppe>108</foerderbetrag_gruppe>
+        <foerderbetrag_gruppe>72</foerderbetrag_gruppe>
+        <foerderbetrag_gruppe>108</foerderbetrag_gruppe>
+        <foerderkinder>2</foerderkinder>
+        <teilnehmerzahl>3</teilnehmerzahl>
+        <dauer>60</dauer>
+        <halleneinheiten>4</halleneinheiten>
       </training>
       <training>
         <tag>Mittwoch</tag>
-        <teilnehmerzahl>4</teilnehmerzahl>
+        <foerderung>ja</foerderung>
+        <foerderbetrag_gruppe>48</foerderbetrag_gruppe>
+        <foerderbetrag_gruppe>192</foerderbetrag_gruppe>
+        <foerderkinder>1</foerderkinder>
+        <teilnehmerzahl>1</teilnehmerzahl>
         <dauer>60</dauer>
-        <foerderung>nein</foerderung>
-        <bezahlt>ja</bezahlt>
-        <halleneinheiten></halleneinheiten>
+        <halleneinheiten>4</halleneinheiten>
       </training>
     </kind>
   </rechnung>
@@ -57,14 +60,12 @@
     <kind>
       <name>Mia</name>
       <training>
-        <tag>Donnerstag</tag>
-        <preis>192</preis>
-        <preis>240</preis>
-        <preis>192</preis>
-        <teilnehmerzahl>4</teilnehmerzahl>
-        <dauer>40</dauer>
-        <foerderung>ja</foerderung>
-        <bezahlt>nein</bezahlt>
+        <tag>Dienstag</tag>
+        <foerderung>nein</foerderung>
+        <foerderbetrag_gruppe></foerderbetrag_gruppe>
+        <foerderkinder></foerderkinder>
+        <teilnehmerzahl>3</teilnehmerzahl>
+        <dauer>60</dauer>
         <halleneinheiten></halleneinheiten>
       </training>
     </kind>
@@ -72,11 +73,12 @@
       <name>Jonas</name>
       <training>
         <tag>Dienstag</tag>
-        <teilnehmerzahl>4</teilnehmerzahl>
-        <dauer>60</dauer>
         <foerderung>nein</foerderung>
-        <bezahlt>ja</bezahlt>
-        <halleneinheiten></halleneinheiten>
+        <foerderbetrag_gruppe></foerderbetrag_gruppe>
+        <foerderkinder></foerderkinder>
+        <teilnehmerzahl>3</teilnehmerzahl>
+        <dauer>40</dauer>
+        <halleneinheiten>10</halleneinheiten>
       </training>
     </kind>
   </rechnung>

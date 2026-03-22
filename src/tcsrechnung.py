@@ -161,22 +161,42 @@ def erstelle_posten(
     meta: Metadaten,
     nettopreise: list[float],
     bruttopreise: list[float],
-) -> str:
-    dauer = _get_int(training, "dauer")
-    teilnehmerzahl = _get_int(training, "teilnehmerzahl")
+) -> str | None:
+    # Create invoice for training only for Förderkinder.  Non-Förderkinder pay the training directly.
+    is_foerderung = _get_text(training, "foerderung")
+    if is_foerderung == "nein":
+        elem_foerderbetrag = training.find("foerderbetrag_gruppe")
+        if elem_foerderbetrag is not None and elem_foerderbetrag.text is not None:
+            raise TCSRechnungError(
+                "<foerderbetrag_gruppe> hat Wert {elem_foerderbetrag.text}, aber darf"
+                " keinen gültigen Wert haben wenn <foerderung>=nein"
+            )
+        elem_foerderkinder = training.find("foerderkinder")
+        if elem_foerderkinder is not None and elem_foerderkinder.text is not None:
+            raise TCSRechnungError(
+                "<foerderkinder> hat Wert {elem_foerderkinder.text}, aber darf keinen"
+                " gültigen Wert haben wenn <foerderung>=nein"
+            )
+        return None
+    elif is_foerderung != "ja":
+        raise TCSRechnungError(
+            f"Ungültiger Eintrag <foerderung>={is_foerderung}.  Erlaubte Werte"
+            " sind 'ja' und 'nein'."
+        )
 
-    gesamtpreis = 0
-    for preis in _get_all_elems(training, "preis"):
-        if preis.text is None:
-            raise TCSRechnungError(f"<{preis.tag}> ist leer")
+    gesamtfoerderung = 0
+    for foerderbetrag in _get_all_elems(training, "foerderbetrag_gruppe"):
+        if foerderbetrag.text is None:
+            raise TCSRechnungError(f"<{foerderbetrag.tag}> ist leer")
         try:
-            gesamtpreis += int(preis.text)
+            gesamtfoerderung += int(foerderbetrag.text)
         except ValueError:
             raise TCSRechnungError(
-                f"<{preis.tag}>='{preis.text}' ist keine gültige Zahl"
+                f"<{foerderbetrag.tag}>='{foerderbetrag.text}' ist keine gültige Zahl"
             )
-    gesamtpreis_netto = gesamtpreis / (teilnehmerzahl * (1.0 + MWST_VOLL))
 
+    dauer = _get_int(training, "dauer")
+    teilnehmerzahl = _get_int(training, "teilnehmerzahl")
     if dauer == 60:
         stdlohn = meta.stdlohn60[teilnehmerzahl - 1]
         stdlohn_netto = meta.stdlohn60n[teilnehmerzahl - 1]
@@ -186,29 +206,20 @@ def erstelle_posten(
     else:
         raise TCSRechnungError(f"Ungültige Trainingsdauer={dauer}")
 
-    if gesamtpreis % stdlohn != 0:
+    foerderkinder = _get_int(training, "foerderkinder")
+    if gesamtfoerderung * teilnehmerzahl % stdlohn * foerderkinder != 0:
         raise TCSRechnungError(
-            f"Gesamtpreis={gesamtpreis} ist kein Vielfaches von stdlohn={stdlohn}"
+            f"Gesamtfoerderung={gesamtfoerderung} ist kein Vielfaches von"
+            f" stdlohn={stdlohn}"
         )
-    einheiten = int(gesamtpreis / stdlohn)
+    einheiten = int(gesamtfoerderung / stdlohn)
 
-    is_foerderung = _get_text(training, "foerderung")
-    if is_foerderung == "ja":
-        foerderung = gesamtpreis_netto
-        zahlbetrag = 0.0
-        zahlbetrag_brutto = 0.0
-    elif is_foerderung == "nein":
-        foerderung = 0.0
-        zahlbetrag = gesamtpreis_netto
-        zahlbetrag_brutto = gesamtpreis / teilnehmerzahl
-    else:
-        raise TCSRechnungError(
-            f"Ungültiger Eintrag <foerderung>={is_foerderung}.  Erlaubte Werte sind"
-            " 'ja' und 'nein'."
-        )
+    foerderung_pp_netto = gesamtfoerderung / (foerderkinder * (1.0 + MWST_VOLL))
+    zahlbetrag_netto = 0.0
+    zahlbetrag_brutto = 0.0
 
-    nettopreise.append(round(zahlbetrag, 2))
-    bruttopreise.append(round(zahlbetrag_brutto, 2))
+    nettopreise.append(zahlbetrag_netto)
+    bruttopreise.append(zahlbetrag_brutto)
 
     posten = (
         "\\Posten{"
@@ -222,11 +233,11 @@ def erstelle_posten(
         + "}{"
         + str(dauer)
         + "}{"
-        + "{:.2f}".format(gesamtpreis_netto).replace(".", ",")
+        + "{:.2f}".format(foerderung_pp_netto).replace(".", ",")
         + "}{"
-        + "{:.2f}".format(foerderung).replace(".", ",")
+        + "{:.2f}".format(foerderung_pp_netto).replace(".", ",")
         + "}{"
-        + "{:.2f}".format(zahlbetrag).replace(".", ",")
+        + "{:.2f}".format(zahlbetrag_netto).replace(".", ",")
         + "}\n"
     )
     return posten
@@ -331,16 +342,12 @@ def erstelle_rechnung(
         posten_halle = []
         try:
             for training in _get_all_elems(kind, "training"):
-                is_bezahlt = _get_text(training, "bezahlt")
-                if is_bezahlt == "nein":
-                    posten_training.append(
-                        erstelle_posten(training, meta, nettopreise16, bruttopreise16)
+                if (
+                    current_posten := erstelle_posten(
+                        training, meta, nettopreise16, bruttopreise16
                     )
-                elif is_bezahlt != "ja":
-                    raise TCSRechnungError(
-                        f"Ungültiger Eintrag <bezahlt>={is_bezahlt}.  Erlaubte Werte"
-                        " sind 'ja' und 'nein'."
-                    )
+                ) is not None:
+                    posten_training.append(current_posten)
 
                 posten_halle.append(
                     erstelle_hallenposten(training, meta, nettopreise7, bruttopreise7)
