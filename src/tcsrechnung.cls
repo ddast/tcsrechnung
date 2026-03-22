@@ -63,7 +63,7 @@
 \widowpenalty10000
 \clubpenalty10000
 
-% Nutze scrpage2 Fuß- und Kopfzeilen
+% Nutze scrlayer-scrpage für Fuß- und Kopfzeilen
 \pagestyle{scrheadings}
 
 % Absendername in riesigen fetten Buchstaben
