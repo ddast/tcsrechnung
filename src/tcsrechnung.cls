@@ -33,9 +33,6 @@
 % Name dieser Klasse tcsrechnung
 \ProvidesClass{tcsrechnung}
 
-% Zeichensatz UTF8
-\usepackage[utf8]{inputenc}
-
 % T1 Schriften
 \usepackage[T1]{fontenc}
 
