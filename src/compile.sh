@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 if [ "$#" -ge 1 ]; then
   xmlfile="$1"
   shift
