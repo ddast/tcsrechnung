@@ -14,6 +14,38 @@ Normalerweise muss nur die XML-Datei angepasst werden.  Die Python- und LaTeX-Da
 - LaTeX-Distribution (z.B. TeX Live) mit KOMA-Klasse `scrlttr2` und `latexmk`
 - Für Entwicklung die Python-Pakete: `pytest`, `mypy`, `black`
 
+## Einrichtung
+
+### LaTeX-Klasse installieren
+
+Um `compile.sh` von beliebigen Orten aus aufrufen zu können, muss die LaTeX-Klasse `tcsrechnung.cls` in einem Verzeichnis installiert werden, das LaTeX durchsucht:
+
+```bash
+mkdir -p ~/texmf/tex/latex/tcsrechnung
+ln -s $(pwd)/src/tcsrechnung.cls ~/texmf/tex/latex/tcsrechnung/
+ln -s $(pwd)/src/tcslogo.pdf ~/texmf/tex/latex/tcsrechnung/
+```
+
+Nach der Installation muss die TeX-Datei-Datenbank aktualisiert werden:
+
+```bash
+# Für TeX Live
+texhash ~/texmf
+
+# Oder falls texhash nicht verfügbar:
+# Die Klasse wird beim ersten LaTeX-Lauf automatisch gefunden
+```
+
+### Persönliche Daten konfigurieren
+
+Die LaTeX-Klasse benötigt persönliche Daten (Rücksendeadresse, Kontakt). Diese werden aus einer separaten Konfigurationsdatei geladen, die nicht im Repository enthalten ist:
+
+```bash
+cp src/personal-config.template.tex src/personal-config.tex
+ln -s $(pwd)/src/personal-config.tex ~/texmf/tex/latex/tcsrechnung/
+# personal-config.tex mit einem Texteditor anpassen
+```
+
 ## Verwendung
 
 ### Vollständige Verarbeitung (XML → PDF)
