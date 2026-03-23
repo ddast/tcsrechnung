@@ -8,7 +8,7 @@ if [ "$#" -ge 1 ]; then
 else
   echo "Verwendung: $0 xmldatei arguments"
   echo "xmldatei: Enthält xml Beschreibung der Rechnungen"
-  echo "argument: Weitere Argumente, die an tcsrechung weitergegeben werden"
+  echo "argument: Weitere Argumente, die an tcsrechnung weitergegeben werden"
   exit 1
 fi
 
