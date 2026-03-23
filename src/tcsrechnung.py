@@ -462,11 +462,14 @@ def run() -> None:
     parser = argparse.ArgumentParser(
         prog="tcsrechnung", description="Erstelle LaTeX Datei für TCS Rechnungen"
     )
-    parser.add_argument("-i", required=True, help="Eingabedatei (xml Format)")
+    parser.add_argument("eingabedatei", help="Eingabedatei (xml Format)")
     parser.add_argument(
-        "-o", required=True, help="Ausgabeordner Rechnungen (tex Format)"
+        "-o",
+        "--output",
+        required=True,
+        help="Ausgabeordner für Rechnungen im tex format ",
     )
-    parser.add_argument("-m", required=True, help="Ausgabedatei Emails (csv Format)")
+    parser.add_argument("-m", "--mails", required=True, help="Ausgabeordner für Emails")
     parser.add_argument(
         "--nosingle",
         action="store_true",
@@ -474,14 +477,18 @@ def run() -> None:
     )
     args = parser.parse_args()
 
-    tree = ET.parse(args.i)
+    tree = ET.parse(args.eingabedatei)
     root = tree.getroot()
-    if not os.path.exists(args.o):
-        os.makedirs(args.o)
+    if os.path.exists(args.output):
+        raise TCSRechnungError(f"{args.output} existiert bereits")
+    if os.path.exists(args.mails):
+        raise TCSRechnungError(f"{args.mails} existiert bereits")
+    os.makedirs(args.output)
+    os.makedirs(args.mails)
     meta = Metadaten(root)
 
     texfile_all = os.path.join(
-        args.o,
+        args.output,
         "rechnungen_"
         + str(meta.jahr)
         + "_"
@@ -490,8 +497,9 @@ def run() -> None:
         + str(MONATE_DIC[meta.bis_monat])
         + ".tex",
     )
-    filename_nomail = os.path.join(args.o, "rechnungen_nomail.txt")
-    with open(args.m, "w") as f_mail, open(texfile_all, "w") as f_tex_all, open(
+    filename_mail = os.path.join(args.mails, "mails.csv")
+    filename_nomail = os.path.join(args.mails, "nomail.txt")
+    with open(filename_mail, "w") as f_mail, open(texfile_all, "w") as f_tex_all, open(
         filename_nomail, "w"
     ) as f_nomail:
         f_mail.write(get_mail_header())
@@ -505,7 +513,7 @@ def run() -> None:
             if args.nosingle:
                 continue
             texfile = os.path.join(
-                args.o,
+                args.output,
                 str(meta.jahr_cur - 2000) + "_{:04d}".format(rechnungsnr) + ".tex",
             )
             with open(texfile, "w") as f_tex:

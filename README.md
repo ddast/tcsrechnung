@@ -16,6 +16,14 @@ Normalerweise muss nur die XML-Datei angepasst werden.  Die Python- und LaTeX-Da
 
 ## Einrichtung
 
+### Script installieren
+
+Zur Verwendung von `compile.sh` muss `tcsrechnung.py` als `tcsrechnung` ausführbar sein.  Falls `~/bin' bereits im `$PATH` ist:
+
+```bash
+ln -s $(pwd)/src/tcsrechnung.py ~/bin/tcsrechnung
+```
+
 ### LaTeX-Klasse installieren
 
 Um `compile.sh` von beliebigen Orten aus aufrufen zu können, muss die LaTeX-Klasse `tcsrechnung.cls` in einem Verzeichnis installiert werden, das LaTeX durchsucht:
@@ -59,7 +67,7 @@ Dies erzeugt im Verzeichnis `pdf/` die fertigen Rechnungen als PDF-Dateien.  Opt
 ### Nur Python (XML → LaTeX)
 
 ```bash
-python3 src/tcsrechnung.py -i rechnungen.xml -o tex -m mails.csv
+python3 src/tcsrechnung.py -o tex -m mails rechnungen.xml
 ```
 
 Optionen:

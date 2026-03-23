@@ -14,7 +14,7 @@ fi
 
 texdir="tex"
 pdfdir="pdf"
-mailfile="mails.csv"
+maildir="mails"
 builddir="tmp"
 
 if [ ! -f "$xmlfile" ]; then
@@ -22,9 +22,9 @@ if [ ! -f "$xmlfile" ]; then
   exit 1
 fi
 
-rm -rf "$texdir" "$pdfdir" "$builddir" "$mailfile"
+rm -rf "$texdir" "$pdfdir" "$builddir" "$maildir"
 
-tcsrechnung -i "$xmlfile" -o "$texdir" -m "$mailfile" "$@"
+tcsrechnung -o "$texdir" -m "$maildir" "$xmlfile" "$@"
 
 for i in "$texdir"/*.tex; do
   latexmk -silent -interaction=nonstopmode -pdf -outdir="$builddir" "$i"
