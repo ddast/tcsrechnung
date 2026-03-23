@@ -118,6 +118,11 @@
 \ifoot{\\[13.0mm]\usekomavar{frombank}}
 \ofoot{\\[13.0mm]\usekomavar{fromtaxes}}
 
+% Rücksendeadresse
+\setkomavar{backaddress}{TC Stetten/F.\\
+                         Gräbleswiesenweg 50\\
+                         70771 Leinf.-Echterd.}
+
 % Lese persönliche Daten aus externer Datei
 \IfFileExists{personal-config.tex}{
   \input{personal-config.tex}
