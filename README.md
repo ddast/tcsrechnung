@@ -93,5 +93,5 @@ mypy --ignore-missing-imports test/
 ### Code-Formatierung
 
 ```bash
-black src/ test/
+black --preview --enable-unstable-feature=string_processing src/ test/
 ```
