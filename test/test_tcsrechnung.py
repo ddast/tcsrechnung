@@ -170,23 +170,35 @@ class TestErstellePosten:
     def create_training_xml(
         self,
         tag: str = "Montag",
-        preise: list[int] | None = None,
+        foerderbetraege: list[int] | None = None,
+        foerderkinder: int | None = None,
         teilnehmerzahl: int = 4,
         dauer: int = 60,
         foerderung: str = "nein",
-        bezahlt: str = "nein",
     ) -> ET.Element:
-        if preise is None:
-            preise = [224]
+        if foerderung == "ja":
+            if foerderbetraege is None:
+                foerderbetraege = [224]
+            if foerderkinder is None:
+                foerderkinder = 1
+            foerderbetrag_xml = "".join(
+                [
+                    f"<foerderbetrag_gruppe>{p}</foerderbetrag_gruppe>"
+                    for p in foerderbetraege
+                ]
+            )
+            foerderkinder_xml = f"<foerderkinder>{foerderkinder}</foerderkinder>"
+        else:
+            foerderbetrag_xml = "<foerderbetrag_gruppe></foerderbetrag_gruppe>"
+            foerderkinder_xml = "<foerderkinder></foerderkinder>"
 
-        preis_xml = "".join([f"<preis>{p}</preis>" for p in preise])
         return ET.fromstring(f"""<training>
             <tag>{tag}</tag>
-            {preis_xml}
+            <foerderung>{foerderung}</foerderung>
+            {foerderbetrag_xml}
+            {foerderkinder_xml}
             <teilnehmerzahl>{teilnehmerzahl}</teilnehmerzahl>
             <dauer>{dauer}</dauer>
-            <foerderung>{foerderung}</foerderung>
-            <bezahlt>{bezahlt}</bezahlt>
         </training>""")
 
     def create_metadata(self) -> Metadaten:
@@ -214,11 +226,30 @@ class TestErstellePosten:
         </data>""")
         return Metadaten(root)
 
-    def test_posten_60min_4teilnehmer_no_foerderung(self):
+    def test_posten_60min_4teilnehmer_with_foerderung(self):
         meta = self.create_metadata()
         training = self.create_training_xml(
             tag="Montag",
-            preise=[224],
+            foerderbetraege=[224],
+            foerderkinder=1,
+            teilnehmerzahl=4,
+            dauer=60,
+            foerderung="ja",
+        )
+
+        nettopreise = []
+        bruttopreise = []
+        result = erstelle_posten(training, meta, nettopreise, bruttopreise)
+
+        assert "\\Posten{Montag}{4}{" in result
+
+        assert nettopreise == [0.0]
+        assert bruttopreise == [0.0]
+
+    def test_posten_no_foerderung_returns_none(self):
+        meta = self.create_metadata()
+        training = self.create_training_xml(
+            tag="Montag",
             teilnehmerzahl=4,
             dauer=60,
             foerderung="nein",
@@ -228,20 +259,16 @@ class TestErstellePosten:
         bruttopreise = []
         result = erstelle_posten(training, meta, nettopreise, bruttopreise)
 
-        assert "\\Posten{Montag}{4}{" in result
-        assert "}{4}{60}{" in result
+        assert result is None
+        assert nettopreise == []
+        assert bruttopreise == []
 
-        expected_netto = round(224 / (4 * (1 + MWST_VOLL)), 2)
-        expected_brutto = round(224 / 4, 2)
-
-        assert nettopreise == [expected_netto]
-        assert bruttopreise == [expected_brutto]
-
-    def test_posten_40min_3teilnehmer_with_foerderung(self):
+    def test_posten_40min_with_foerderung(self):
         meta = self.create_metadata()
         training = self.create_training_xml(
             tag="Dienstag",
-            preise=[126],
+            foerderbetraege=[126],
+            foerderkinder=1,
             teilnehmerzahl=3,
             dauer=40,
             foerderung="ja",
@@ -252,34 +279,38 @@ class TestErstellePosten:
         result = erstelle_posten(training, meta, nettopreise, bruttopreise)
 
         assert "\\Posten{Dienstag}{3}{" in result
-        assert "}{3}{40}{" in result
 
         assert nettopreise == [0.0]
         assert bruttopreise == [0.0]
 
-    def test_posten_multiple_preise(self):
+    def test_posten_multiple_foerderbetraege(self):
         meta = self.create_metadata()
         training = self.create_training_xml(
             tag="Mittwoch",
-            preise=[100, 200, 12],
-            teilnehmerzahl=2,
+            foerderbetraege=[108, 72, 108],
+            foerderkinder=2,
+            teilnehmerzahl=3,
             dauer=60,
-            foerderung="nein",
+            foerderung="ja",
         )
 
         nettopreise = []
         bruttopreise = []
         result = erstelle_posten(training, meta, nettopreise, bruttopreise)
 
-        assert "\\Posten{Mittwoch}{6}{" in result
-        expected_netto = round(312 / (2 * (1 + MWST_VOLL)), 2)
-        expected_brutto = round(312 / 2, 2)
-        assert nettopreise == [expected_netto]
-        assert bruttopreise == [expected_brutto]
+        assert "\\Posten{Mittwoch}{5}{" in result
+
+        assert nettopreise == [0.0]
+        assert bruttopreise == [0.0]
 
     def test_posten_invalid_dauer(self):
         meta = self.create_metadata()
-        training = self.create_training_xml(dauer=90)
+        training = self.create_training_xml(
+            dauer=90,
+            foerderung="ja",
+            foerderbetraege=[224],
+            foerderkinder=1,
+        )
 
         with pytest.raises(TCSRechnungError) as exc_info:
             erstelle_posten(training, meta, [], [])
@@ -293,17 +324,96 @@ class TestErstellePosten:
             erstelle_posten(training, meta, [], [])
         assert "Ungültiger Eintrag <foerderung>" in str(exc_info.value)
 
-    def test_posten_price_not_multiple(self):
+    def test_posten_foerderung_not_multiple_of_stdlohn(self):
         meta = self.create_metadata()
         training = self.create_training_xml(
-            preise=[100],
+            foerderbetraege=[100],
+            foerderkinder=1,
             teilnehmerzahl=4,
             dauer=60,
+            foerderung="ja",
         )
 
         with pytest.raises(TCSRechnungError) as exc_info:
             erstelle_posten(training, meta, [], [])
         assert "ist kein Vielfaches von stdlohn" in str(exc_info.value)
+
+    def test_posten_empty_foerderbetrag_gruppe(self):
+        meta = self.create_metadata()
+        training = ET.fromstring("""<training>
+            <tag>Montag</tag>
+            <foerderung>ja</foerderung>
+            <foerderbetrag_gruppe></foerderbetrag_gruppe>
+            <foerderkinder>1</foerderkinder>
+            <teilnehmerzahl>4</teilnehmerzahl>
+            <dauer>60</dauer>
+        </training>""")
+
+        with pytest.raises(TCSRechnungError) as exc_info:
+            erstelle_posten(training, meta, [], [])
+        assert "ist leer" in str(exc_info.value)
+
+    def test_posten_invalid_foerderbetrag_value(self):
+        meta = self.create_metadata()
+        training = ET.fromstring("""<training>
+            <tag>Montag</tag>
+            <foerderung>ja</foerderung>
+            <foerderbetrag_gruppe>abc</foerderbetrag_gruppe>
+            <foerderkinder>1</foerderkinder>
+            <teilnehmerzahl>4</teilnehmerzahl>
+            <dauer>60</dauer>
+        </training>""")
+
+        with pytest.raises(TCSRechnungError) as exc_info:
+            erstelle_posten(training, meta, [], [])
+        assert "ist keine gültige Zahl" in str(exc_info.value)
+
+    def test_posten_foerderung_nein_with_foerderbetrag_value(self):
+        meta = self.create_metadata()
+        training = ET.fromstring("""<training>
+            <tag>Montag</tag>
+            <foerderung>nein</foerderung>
+            <foerderbetrag_gruppe>224</foerderbetrag_gruppe>
+            <foerderkinder></foerderkinder>
+            <teilnehmerzahl>4</teilnehmerzahl>
+            <dauer>60</dauer>
+        </training>""")
+
+        with pytest.raises(TCSRechnungError) as exc_info:
+            erstelle_posten(training, meta, [], [])
+        assert "<foerderbetrag_gruppe> hat Wert" in str(exc_info.value)
+        assert "darf keinen gültigen Wert haben" in str(exc_info.value)
+
+    def test_posten_foerderung_nein_with_foerderkinder_value(self):
+        meta = self.create_metadata()
+        training = ET.fromstring("""<training>
+            <tag>Montag</tag>
+            <foerderung>nein</foerderung>
+            <foerderbetrag_gruppe></foerderbetrag_gruppe>
+            <foerderkinder>2</foerderkinder>
+            <teilnehmerzahl>4</teilnehmerzahl>
+            <dauer>60</dauer>
+        </training>""")
+
+        with pytest.raises(TCSRechnungError) as exc_info:
+            erstelle_posten(training, meta, [], [])
+        assert "<foerderkinder> hat Wert" in str(exc_info.value)
+        assert "darf keinen gültigen Wert haben" in str(exc_info.value)
+
+    def test_posten_missing_foerderkinder(self):
+        meta = self.create_metadata()
+        training = ET.fromstring("""<training>
+            <tag>Montag</tag>
+            <foerderung>ja</foerderung>
+            <foerderbetrag_gruppe>224</foerderbetrag_gruppe>
+            <teilnehmerzahl>4</teilnehmerzahl>
+            <dauer>60</dauer>
+        </training>""")
+
+        with pytest.raises(TCSRechnungError) as exc_info:
+            erstelle_posten(training, meta, [], [])
+        assert "Element <foerderkinder>" in str(exc_info.value)
+        assert "fehlt" in str(exc_info.value)
 
 
 class TestErstelleHallenposten:
@@ -405,6 +515,18 @@ class TestErstelleHallenposten:
         expected_netto = round(10 * (14 / (1 + MWST_ERM)) * 40 / (60 * 2), 2)
         assert nettopreise == [expected_netto]
 
+    def test_hallenposten_invalid_weekday(self):
+        meta = self.create_metadata_with_wochentage([10, 10, 10, 10, 10, 10, 10])
+        training = ET.fromstring("""<training>
+            <tag>UnbekannterTag</tag>
+            <teilnehmerzahl>4</teilnehmerzahl>
+            <dauer>60</dauer>
+            <halleneinheiten></halleneinheiten>
+        </training>""")
+
+        with pytest.raises(KeyError):
+            erstelle_hallenposten(training, meta, [], [])
+
 
 class TestErstelleRechnung:
     def create_rechnung_xml(
@@ -417,11 +539,11 @@ class TestErstelleRechnung:
                     "trainings": [
                         {
                             "tag": "Montag",
-                            "preise": [224],
+                            "foerderbetraege": [224],
+                            "foerderkinder": 1,
                             "teilnehmerzahl": 4,
                             "dauer": 60,
-                            "foerderung": "nein",
-                            "bezahlt": "nein",
+                            "foerderung": "ja",
                             "halleneinheiten": None,
                         }
                     ],
@@ -438,16 +560,27 @@ class TestErstelleRechnung:
                 else:
                     halleneinheiten_xml = "<halleneinheiten></halleneinheiten>"
 
-                preise_xml = "".join(
-                    [f"<preis>{p}</preis>" for p in training["preise"]]
-                )
+                if training["foerderung"] == "ja":
+                    foerderbetrag_xml = "".join(
+                        [
+                            f"<foerderbetrag_gruppe>{p}</foerderbetrag_gruppe>"
+                            for p in training["foerderbetraege"]
+                        ]
+                    )
+                    foerderkinder_xml = (
+                        f"<foerderkinder>{training['foerderkinder']}</foerderkinder>"
+                    )
+                else:
+                    foerderbetrag_xml = "<foerderbetrag_gruppe></foerderbetrag_gruppe>"
+                    foerderkinder_xml = "<foerderkinder></foerderkinder>"
+
                 trainings_xml += f"""<training>
                     <tag>{training['tag']}</tag>
-                    {preise_xml}
+                    <foerderung>{training['foerderung']}</foerderung>
+                    {foerderbetrag_xml}
+                    {foerderkinder_xml}
                     <teilnehmerzahl>{training['teilnehmerzahl']}</teilnehmerzahl>
                     <dauer>{training['dauer']}</dauer>
-                    <foerderung>{training['foerderung']}</foerderung>
-                    <bezahlt>{training['bezahlt']}</bezahlt>
                     {halleneinheiten_xml}
                 </training>"""
 
@@ -510,11 +643,11 @@ class TestErstelleRechnung:
                 "trainings": [
                     {
                         "tag": "Montag",
-                        "preise": [224],
+                        "foerderbetraege": [224],
+                        "foerderkinder": 1,
                         "teilnehmerzahl": 4,
                         "dauer": 60,
-                        "foerderung": "nein",
-                        "bezahlt": "nein",
+                        "foerderung": "ja",
                         "halleneinheiten": None,
                     }
                 ],
@@ -524,11 +657,11 @@ class TestErstelleRechnung:
                 "trainings": [
                     {
                         "tag": "Dienstag",
-                        "preise": [224],
+                        "foerderbetraege": [224],
+                        "foerderkinder": 1,
                         "teilnehmerzahl": 4,
                         "dauer": 60,
-                        "foerderung": "nein",
-                        "bezahlt": "nein",
+                        "foerderung": "ja",
                         "halleneinheiten": None,
                     }
                 ],
@@ -544,7 +677,7 @@ class TestErstelleRechnung:
         assert "Hallenkosten (Max)}" in result
         assert "Hallenkosten (Lisa)}" in result
 
-    def test_bezahlt_skips_training(self):
+    def test_no_foerderung_skips_training_costs(self):
         meta = self.create_metadata()
         kinder_data = [
             {
@@ -552,20 +685,20 @@ class TestErstelleRechnung:
                 "trainings": [
                     {
                         "tag": "Montag",
-                        "preise": [224],
+                        "foerderbetraege": [],
+                        "foerderkinder": 0,
                         "teilnehmerzahl": 4,
                         "dauer": 60,
                         "foerderung": "nein",
-                        "bezahlt": "ja",
                         "halleneinheiten": None,
                     },
                     {
                         "tag": "Dienstag",
-                        "preise": [224],
+                        "foerderbetraege": [224],
+                        "foerderkinder": 1,
                         "teilnehmerzahl": 4,
                         "dauer": 60,
-                        "foerderung": "nein",
-                        "bezahlt": "nein",
+                        "foerderung": "ja",
                         "halleneinheiten": None,
                     },
                 ],
@@ -591,11 +724,116 @@ class TestErstelleRechnung:
         ), "Dienstag training should appear"
         assert (
             "\\Posten{Montag}" not in training_section
-        ), "Montag training should be skipped"
+        ), "Montag training should not appear (no foerderung)"
 
         assert hall_section is not None, "Hall section missing"
         assert "\\Posten{Montag}" in hall_section, "Montag hall costs should appear"
         assert "\\Posten{Dienstag}" in hall_section, "Dienstag hall costs should appear"
+
+    def test_summer_season_summeSommer(self):
+        root = ET.fromstring("""<data>
+            <von>April</von>
+            <bis>Juni</bis>
+            <jahr>2024</jahr>
+            <stdkosten60>
+                <p1>48</p1>
+                <p2>52</p2>
+                <p3>54</p3>
+                <p4>56</p4>
+                <p5>60</p5>
+            </stdkosten60>
+            <stdkosten40>
+                <p1>36</p1>
+                <p2>40</p2>
+                <p3>42</p3>
+                <p4>48</p4>
+            </stdkosten40>
+            <beginn_halle>01-10-2024</beginn_halle>
+            <hallenkosten>14</hallenkosten>
+            <rechnungsnummer>0</rechnungsnummer>
+        </data>""")
+        meta = Metadaten(root)
+        assert meta.hallensaison is False
+
+        kinder_data = [
+            {
+                "name": "Max",
+                "trainings": [
+                    {
+                        "tag": "Montag",
+                        "foerderbetraege": [224],
+                        "foerderkinder": 1,
+                        "teilnehmerzahl": 4,
+                        "dauer": 60,
+                        "foerderung": "ja",
+                        "halleneinheiten": None,
+                    }
+                ],
+            }
+        ]
+        rechnung = self.create_rechnung_xml(kinder_data=kinder_data)
+
+        result = erstelle_rechnung(rechnung, 1, meta)
+
+        assert "\\SummeSommer{" in result
+        assert "\\SummeWinter{" not in result
+        assert "Trainingskosten}" in result
+        assert "Hallenkosten}" not in result
+
+    def test_missing_rechnung_name(self):
+        meta = self.create_metadata()
+        rechnung = ET.fromstring("""<rechnung>
+            <strasse>Teststraße 1</strasse>
+            <ort>12345 Teststadt</ort>
+            <email>test@example.com</email>
+            <kind>
+                <name>Max</name>
+            </kind>
+        </rechnung>""")
+
+        with pytest.raises(TCSRechnungError) as exc_info:
+            erstelle_rechnung(rechnung, 1, meta)
+        assert "Element <name>" in str(exc_info.value)
+        assert "fehlt" in str(exc_info.value)
+
+    def test_missing_rechnung_strasse(self):
+        meta = self.create_metadata()
+        rechnung = ET.fromstring("""<rechnung>
+            <name>Familie Test</name>
+            <ort>12345 Teststadt</ort>
+            <email>test@example.com</email>
+            <kind>
+                <name>Max</name>
+            </kind>
+        </rechnung>""")
+
+        with pytest.raises(TCSRechnungError) as exc_info:
+            erstelle_rechnung(rechnung, 1, meta)
+        assert "Element <strasse>" in str(exc_info.value)
+        assert "fehlt" in str(exc_info.value)
+
+    def test_missing_kind_name(self):
+        meta = self.create_metadata()
+        rechnung = ET.fromstring("""<rechnung>
+            <name>Familie Test</name>
+            <strasse>Teststraße 1</strasse>
+            <ort>12345 Teststadt</ort>
+            <email>test@example.com</email>
+            <kind>
+                <training>
+                    <tag>Montag</tag>
+                    <foerderung>ja</foerderung>
+                    <foerderbetrag_gruppe>224</foerderbetrag_gruppe>
+                    <foerderkinder>1</foerderkinder>
+                    <teilnehmerzahl>4</teilnehmerzahl>
+                    <dauer>60</dauer>
+                </training>
+            </kind>
+        </rechnung>""")
+
+        with pytest.raises(TCSRechnungError) as exc_info:
+            erstelle_rechnung(rechnung, 1, meta)
+        assert "Element <name>" in str(exc_info.value)
 
 
 class TestErstelleMail:
