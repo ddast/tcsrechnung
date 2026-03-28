@@ -114,8 +114,8 @@
 
 \KOMAoptions{footwidth=\useplength{firstfootwidth}}
 \cfoot{}
-\ifoot{\\[13.0mm]\usekomavar{frombank}}
-\ofoot{\\[13.0mm]\usekomavar{fromtaxes}}
+\ifoot{\\\usekomavar{frombank}}
+\ofoot{\\\usekomavar{fromtaxes}}
 
 % Rücksendeadresse
 \setkomavar{backaddress}{TC Stetten/F.\\
