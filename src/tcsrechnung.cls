@@ -55,6 +55,13 @@
 % Eurosymbol
 \RequirePackage{eurosym}
 
+% Mehrseitige Tabellen
+\RequirePackage{longtable}
+\setlength{\LTpre}{0pt}
+\setlength{\LTpost}{5pt}
+\setlength{\LTleft}{0pt}
+\setlength{\LTright}{0pt}
+
 % Zeilenabstand in Tabellen vergrößern (Standard 1)
 \renewcommand{\arraystretch}{1.25}
 
@@ -148,19 +155,25 @@
   \setkomavar{invoice}{#1}
   \setkomavar{subject}{Training #2 bis #3\\#4}
   \opening{}
-  \begin{center}
-    \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} lrrrrrrr }
-      \hline
-      \scriptsize Tag & \scriptsize Einheiten & \scriptsize Preis/Std
-      & \scriptsize Gruppe & \scriptsize Dauer & \scriptsize Preis
-      & \scriptsize Förderung & \scriptsize Gesamt \\
-      \hline
+  \begin{longtable}{@{\extracolsep{\fill}} lrrrrrrr @{}}
+    \hline
+    \scriptsize Tag & \scriptsize Einheiten & \scriptsize Preis/Std
+    & \scriptsize Gruppe & \scriptsize Dauer & \scriptsize Preis
+    & \scriptsize Förderung & \scriptsize Gesamt \\
+    \hline
+    \endfirsthead
+    \hline
+    \scriptsize Tag & \scriptsize Einheiten & \scriptsize Preis/Std
+    & \scriptsize Gruppe & \scriptsize Dauer & \scriptsize Preis
+    & \scriptsize Förderung & \scriptsize Gesamt \\
+    \hline
+    \endhead
 }
 
 % Schreibt den Kostentyp in die Tabelle
 % \Kostentyp{Diese und jene Kosten}
 \newcommand{\Kostentyp}[1]{
-  \multicolumn{8}{@{\extracolsep{\fill}} c}{\textbf{#1}} \\
+  \multicolumn{8}{@{} c @{}}{\textbf{#1}} \\
 }
 
 % Erzeugt einen Rechnungsposten (eine Zeile) in der Tabelle
@@ -174,32 +187,30 @@
 % Im Winter mit 7% MwSt, im Sommer ohne
 % \SummeWinter{Summe netto}{MwSt 19%}{MwSt 7%}{Summe brutto}
 \newcommand{\SummeWinter}[4]{
-      \hline\hline
-      \multicolumn{7}{@{\extracolsep{\fill}} l}{Summe ohne MwSt.} & \EUR{#1} \\
-      \hline
-      \multicolumn{7}{@{\extracolsep{\fill}} l}{MwSt. 19\%} & \EUR{#2} \\
-      \multicolumn{7}{@{\extracolsep{\fill}} l}{MwSt. 7\%} & \EUR{#3} \\
-      \hline\hline
-      \multicolumn{7}{@{\extracolsep{\fill}} l}%
-        {\textbf{Gesamtsumme inkl. MwSt.}} & \textbf{\EUR{#4}}
-      \\
-      \hline
-    \end{tabular*}
-  \end{center}
+    \hline\hline
+    \multicolumn{7}{@{} l}{Summe ohne MwSt.} & \EUR{#1} \\
+    \hline
+    \multicolumn{7}{@{} l}{MwSt. 19\%} & \EUR{#2} \\
+    \multicolumn{7}{@{} l}{MwSt. 7\%} & \EUR{#3} \\
+    \hline\hline
+    \multicolumn{7}{@{} l}%
+      {\textbf{Gesamtsumme inkl. MwSt.}} & \textbf{\EUR{#4}}
+    \\
+    \hline
+  \end{longtable}
 }
 % \SummeSommer{Summe netto}{MwSt 19%}{Summe brutto}
 \newcommand{\SummeSommer}[3]{
-      \hline\hline
-      \multicolumn{7}{@{\extracolsep{\fill}} l}{Summe ohne MwSt.} & \EUR{#1} \\
-      \hline
-      \multicolumn{7}{@{\extracolsep{\fill}} l}{MwSt. 19\%} & \EUR{#2} \\
-      \hline\hline
-      \multicolumn{7}{@{\extracolsep{\fill}} l}%
-        {\textbf{Gesamtsumme inkl. MwSt.}} & \textbf{\EUR{#3}}
-      \\
-      \hline
-    \end{tabular*}
-  \end{center}
+    \hline\hline
+    \multicolumn{7}{@{} l}{Summe ohne MwSt.} & \EUR{#1} \\
+    \hline
+    \multicolumn{7}{@{} l}{MwSt. 19\%} & \EUR{#2} \\
+    \hline\hline
+    \multicolumn{7}{@{} l}%
+      {\textbf{Gesamtsumme inkl. MwSt.}} & \textbf{\EUR{#3}}
+    \\
+    \hline
+  \end{longtable}
 }
 
 % Schreibt den Text unterhalb der Tabelle
