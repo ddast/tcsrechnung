@@ -107,12 +107,12 @@
 \setkomafont{pagefoot}{\normalfont\footnotesize}
 \setkomafont{pagenumber}{\normalsize}
 
-\setheadwidth{\useplength{firstheadwidth}}
+\KOMAoptions{headwidth=\useplength{firstheadwidth}}
 \chead{}
 \ihead{\usekomavar{fromname}\\\usekomavar{fromaddress}}
 \ohead{\includegraphics[width=9mm]{tcslogo}}
 
-\setfootwidth{\useplength{firstfootwidth}}
+\KOMAoptions{footwidth=\useplength{firstfootwidth}}
 \cfoot{}
 \ifoot{\\[13.0mm]\usekomavar{frombank}}
 \ofoot{\\[13.0mm]\usekomavar{fromtaxes}}
