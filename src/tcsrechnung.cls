@@ -102,20 +102,20 @@
   }%
 }
 
-% Fußzeilen ab der zweiten Zeile enthalten zusätzlich die Seitenzahl
-% Bankdaten sind (ungefähr) auf derselben Höhe wie auf der ersten Seite
-\setkomafont{pagefoot}{\normalfont\footnotesize}
-\setkomafont{pagenumber}{\normalsize}
-
-\KOMAoptions{headwidth=\useplength{firstheadwidth}}
+% Kopf- und Fußzeile. Höhen kommt aus der Warnung im Logfile wenn man diese
+% nicht setzt
+\KOMAoptions{headwidth=\useplength{firstheadwidth},headheight=30pt}
 \chead{}
 \ihead{\usekomavar{fromname}\\\usekomavar{fromaddress}}
 \ohead{\includegraphics[width=9mm]{tcslogo}}
 
-\KOMAoptions{footwidth=\useplength{firstfootwidth}}
+\setkomafont{pagefoot}{\normalfont\footnotesize}
+\KOMAoptions{footwidth=\useplength{firstfootwidth},footheight=43pt}
 \cfoot{}
 \ifoot{\\\usekomavar{frombank}}
 \ofoot{\\\usekomavar{fromtaxes}}
+
+\recalctypearea
 
 % Rücksendeadresse
 \setkomavar{backaddress}{TC Stetten/F.\\
