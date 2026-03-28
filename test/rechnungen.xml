@@ -50,6 +50,54 @@
         <halleneinheiten>4</halleneinheiten>
       </training>
     </kind>
+    <kind>
+      <name>Lara</name>
+      <training>
+        <tag>Dienstag</tag>
+        <foerderung>ja</foerderung>
+        <foerderbetrag_gruppe>108</foerderbetrag_gruppe>
+        <foerderbetrag_gruppe>72</foerderbetrag_gruppe>
+        <foerderbetrag_gruppe>108</foerderbetrag_gruppe>
+        <foerderkinder>2</foerderkinder>
+        <teilnehmerzahl>3</teilnehmerzahl>
+        <dauer>60</dauer>
+        <halleneinheiten>4</halleneinheiten>
+      </training>
+      <training>
+        <tag>Mittwoch</tag>
+        <foerderung>ja</foerderung>
+        <foerderbetrag_gruppe>48</foerderbetrag_gruppe>
+        <foerderbetrag_gruppe>192</foerderbetrag_gruppe>
+        <foerderkinder>1</foerderkinder>
+        <teilnehmerzahl>1</teilnehmerzahl>
+        <dauer>60</dauer>
+        <halleneinheiten>4</halleneinheiten>
+      </training>
+    </kind>
+    <kind>
+      <name>David</name>
+      <training>
+        <tag>Dienstag</tag>
+        <foerderung>ja</foerderung>
+        <foerderbetrag_gruppe>108</foerderbetrag_gruppe>
+        <foerderbetrag_gruppe>72</foerderbetrag_gruppe>
+        <foerderbetrag_gruppe>108</foerderbetrag_gruppe>
+        <foerderkinder>2</foerderkinder>
+        <teilnehmerzahl>3</teilnehmerzahl>
+        <dauer>60</dauer>
+        <halleneinheiten>4</halleneinheiten>
+      </training>
+      <training>
+        <tag>Mittwoch</tag>
+        <foerderung>ja</foerderung>
+        <foerderbetrag_gruppe>48</foerderbetrag_gruppe>
+        <foerderbetrag_gruppe>192</foerderbetrag_gruppe>
+        <foerderkinder>1</foerderkinder>
+        <teilnehmerzahl>1</teilnehmerzahl>
+        <dauer>60</dauer>
+        <halleneinheiten>4</halleneinheiten>
+      </training>
+    </kind>
   </rechnung>
 
   <rechnung>
