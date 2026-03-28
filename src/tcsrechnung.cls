@@ -15,6 +15,11 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.  %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Verwendet den Standard LaTeX2e
+\NeedsTeXFormat{LaTeX2e}
+
+% Name dieser Klasse tcsrechnung
+\ProvidesClass{tcsrechnung}
 
 % Briefklasse des Koma-Projektes als Ausgangsklasse
 \LoadClass[
@@ -26,12 +31,6 @@
   version=last,                   % Neueste Komaversion ohne Kompatibilität
   parskip=half-,                  % Neue Absätze ohne Einrückung
 ]{scrlttr2}
-
-% Verwendet den Standard LaTeX2e
-\NeedsTeXFormat{LaTeX2e}
-
-% Name dieser Klasse tcsrechnung
-\ProvidesClass{tcsrechnung}
 
 % T1 Schriften
 \usepackage[T1]{fontenc}
