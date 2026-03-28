@@ -53,7 +53,7 @@
 \RequirePackage{graphicx}
 
 % Eurosymbol
-\RequirePackage{eurosym}
+\RequirePackage[official]{eurosym}
 
 % Mehrseitige Tabellen
 \RequirePackage{longtable}
