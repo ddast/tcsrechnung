@@ -33,27 +33,27 @@
 ]{scrlttr2}
 
 % T1 Schriften
-\usepackage[T1]{fontenc}
+\RequirePackage[T1]{fontenc}
 
 % Silbentrennung nach neuer deutscher Rechtschreibung
-\usepackage[ngerman]{babel}
+\RequirePackage[ngerman]{babel}
 % Füge Worttrennung für unbekannte Worte hinzu
 \hyphenation{Bank-ver-bin-dung-en}
 
 % lmodern Schrifttyp
-\usepackage{lmodern}
+\RequirePackage{lmodern}
 
 % Mehr Kontrolle über Kopf- und Fußzeilen
-\usepackage{scrlayer-scrpage}
+\RequirePackage{scrlayer-scrpage}
 
 % Verbesserter Blocksatz
-\usepackage{microtype}
+\RequirePackage{microtype}
 
 % Grafikmanipulation (für das Logo)
-\usepackage{graphicx}
+\RequirePackage{graphicx}
 
 % Eurosymbol
-\usepackage{eurosym}
+\RequirePackage{eurosym}
 
 % Zeilenabstand in Tabellen vergrößern (Standard 1)
 \renewcommand{\arraystretch}{1.25}
