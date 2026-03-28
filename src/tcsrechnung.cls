@@ -66,8 +66,8 @@
 \renewcommand{\arraystretch}{1.25}
 
 % Erhöhe Strafe für Widows und Clubs
-\widowpenalty10000
-\clubpenalty10000
+\widowpenalty=10000
+\clubpenalty=10000
 
 % Nutze scrlayer-scrpage für Fuß- und Kopfzeilen
 \pagestyle{scrheadings}
