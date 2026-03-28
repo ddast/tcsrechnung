@@ -151,9 +151,9 @@
   \begin{center}
     \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} lrrrrrrr }
       \hline
-      \scriptsize{Tag} & \scriptsize{Einheiten}  & \scriptsize{Preis/Std}
-      & \scriptsize{Gruppe} & \scriptsize{Dauer} & \scriptsize{Preis}
-      & \scriptsize{Förderung} & \scriptsize{Gesamt} \\
+      \scriptsize Tag & \scriptsize Einheiten & \scriptsize Preis/Std
+      & \scriptsize Gruppe & \scriptsize Dauer & \scriptsize Preis
+      & \scriptsize Förderung & \scriptsize Gesamt \\
       \hline
 }
 
