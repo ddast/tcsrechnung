@@ -83,6 +83,61 @@ latexmk -pdf -outdir=build tex/*.tex
 
 Siehe `test/rechnungen.xml` für ein Beispiel der XML-Struktur.
 
+### Wurzelelement `<data>`
+
+| Element | Beschreibung |
+|---------|--------------|
+| `<von>` | Startmonat des Abrechnungszeitraums (z.B. "Oktober") |
+| `<bis>` | Endmonat des Abrechnungszeitraums (z.B. "Dezember") |
+| `<jahr>` | Jahr des Abrechnungszeitraums |
+| `<stdkosten60>` | Stundensätze für 60-Minuten-Training nach Teilnehmerzahl (1–5) |
+| `<stdkosten60><p1>` | Stundensatz bei 1 Teilnehmer (brutto inkl. 19% MwSt) |
+| `<stdkosten60><p2>` | Stundensatz bei 2 Teilnehmern |
+| `<stdkosten60><p3>` | Stundensatz bei 3 Teilnehmern |
+| `<stdkosten60><p4>` | Stundensatz bei 4 Teilnehmern |
+| `<stdkosten60><p5>` | Stundensatz bei 5 Teilnehmern |
+| `<stdkosten40>` | Stundensätze für 40-Minuten-Training nach Teilnehmerzahl (1–4) |
+| `<stdkosten40><p1>` | Stundensatz bei 1 Teilnehmer (brutto inkl. 19% MwSt) |
+| `<stdkosten40><p2>` | Stundensatz bei 2 Teilnehmern |
+| `<stdkosten40><p3>` | Stundensatz bei 3 Teilnehmern |
+| `<stdkosten40><p4>` | Stundensatz bei 4 Teilnehmern |
+| `<beginn_halle>` | Startdatum der Hallensaison im Format TT-MM-JJJJ |
+| `<hallenkosten>` | Hallenkosten pro Stunde pro Teilnehmer (brutto inkl. 7% MwSt) |
+| `<rechnungsnummer>` | Rechnungsnummer der letzten ausgestellten Rechnung.  Diese wird für jede Rechnung hochgezählt und die erste Nummer ist der angegebene Wert + 1. |
+
+### Rechnung `<rechnung>`
+
+Jede `<rechnung>`-Block enthält die Daten einer Rechnung.
+
+| Element | Beschreibung |
+|---------|--------------|
+| `<name>` | Name des Rechnungsempfängers (z.B. "Familie Berger") |
+| `<strasse>` | Straße und Hausnummer |
+| `<ort>` | Postleitzahl und Ort |
+| `<email>` | E-Mail-Adresse für den Versand der Rechnung |
+
+### Kind `<kind>`
+
+Jedes `<kind>`-Element innerhalb einer Rechnung beschreibt ein Kind mit seinen Trainings.
+
+| Element | Beschreibung |
+|---------|--------------|
+| `<name>` | Vorname des Kindes |
+
+### Training `<training>`
+
+Jedes `<training>`-Element innerhalb eines Kindes beschreibt ein Training.
+
+| Element | Beschreibung |
+|---------|--------------|
+| `<tag>` | Wochentag des Trainings (z.B. "Dienstag", "Mittwoch") |
+| `<foerderung>` | Wird das Kind gefördert: "ja" oder "nein" |
+| `<foerderbetrag_gruppe>` | Förderbetrag für die gesamte Gruppe.  Mehrere Elemente möglich, sodass der Förderbetrag für jeden Monat einzeln angegeben werden kann.  Die Summe dieser Elemente ergibt den Förderbetrag für den gesamten Rechnungszeitraum. |
+| `<foerderkinder>` | Anzahl der geförderten Kinder in der Gruppe |
+| `<teilnehmerzahl>` | Anzahl der Teilnehmer in der Trainingsgruppe (1–5) |
+| `<dauer>` | Trainingsdauer in Minuten (40 oder 60) |
+| `<halleneinheiten>` | Optionale Anzahl der Halleneinheiten (Überschreibt die automatische Berechnung aus dem Abrechnungszeitraum) |
+
 ## Entwicklung
 
 ### Tests ausführen
