@@ -149,12 +149,12 @@ pytest test/ -v
 ### Typprüfung
 
 ```bash
-mypy --strict src/
+mypy --strict src/ helper/
 mypy --ignore-missing-imports test/
 ```
 
 ### Code-Formatierung
 
 ```bash
-black --preview --enable-unstable-feature=string_processing src/ test/
+black --preview --enable-unstable-feature=string_processing src/ helper/ test/
 ```
