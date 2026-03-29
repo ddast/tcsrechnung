@@ -117,7 +117,7 @@ def main() -> None:
 
     with open(ausgabe, "w", encoding="utf-8") as f:
         f.write('<?xml version="1.0"?>\n')
-        tree.write(f, encoding="unicode", xml_declaration=False)
+        tree.write(f, encoding="unicode", xml_declaration=False, short_empty_elements=False)
 
     print(f"Konvertiert: {args.eingabedatei} -> {ausgabe}")
 
