@@ -18,7 +18,7 @@ Normalerweise muss nur die XML-Datei angepasst werden.  Die Python- und LaTeX-Da
 
 ### Script installieren
 
-Zur Verwendung von `compile.sh` muss `tcsrechnung.py` als `tcsrechnung` ausführbar sein.  Falls `~/bin' bereits im `$PATH` ist:
+Zur Verwendung von `compile.sh` muss `tcsrechnung.py` als `tcsrechnung` ausführbar sein.  Falls `~/bin` im `$PATH` ist:
 
 ```bash
 ln -s $(pwd)/src/tcsrechnung.py ~/bin/tcsrechnung
@@ -46,7 +46,7 @@ texhash ~/texmf
 
 ### Persönliche Daten konfigurieren
 
-Die LaTeX-Klasse benötigt persönliche Daten (Rücksendeadresse, Kontakt). Diese werden aus einer separaten Konfigurationsdatei geladen, die nicht im Repository enthalten ist:
+Die LaTeX-Klasse benötigt persönliche Daten (Kontakt). Diese werden aus einer separaten Konfigurationsdatei geladen, die nicht im Repository enthalten ist:
 
 ```bash
 cp src/personal-config.template.tex src/personal-config.tex
